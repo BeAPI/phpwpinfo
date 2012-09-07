@@ -9,9 +9,13 @@
 	<IfModule mod_deflate.c>
 		SetEnv http_mod_deflate on
 	</IfModule>
-	
+
 	<IfModule mod_expires.c>
 		SetEnv http_mod_expires on
+	</IfModule>
+	
+	<IfModule mod_filter.c>
+		SetEnv http_mod_filter on
 	</IfModule>
 	
 	<IfModule mod_headers.c>

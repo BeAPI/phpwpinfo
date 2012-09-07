@@ -5,7 +5,7 @@ function phpwpinfo( ) {
 }
 
 /**
- * TODO: Use or not session for save configuration
+ * TODO: Use or not session for save DB configuration
  */
 class PHP_WP_Info {
 	private $php_version = '5.2.4';
@@ -85,9 +85,9 @@ class PHP_WP_Info {
 		// Test PHP Version
 		$sapi_type = php_sapi_name( );
 		if ( substr( $sapi_type, 0, 3 ) == 'cgi' ) {
-			$this->html_table_row( 'PHP Type', '', 'CGI with Apache Worker or another webserver', 'success' );
+			$this->html_table_row( 'PHP Type', '-', 'CGI with Apache Worker or another webserver', 'success' );
 		} else {
-			$this->html_table_row( 'PHP Type', '', 'Apache Modules (low performance)', 'warning' );
+			$this->html_table_row( 'PHP Type', '-', 'Apache Module (low performance)', 'warning' );
 		}
 
 		// Test PHP Version
@@ -103,12 +103,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Not installed', 'error' );
 		} else {
 			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Installed', 'success' );
-			$this->html_table_row( 'PHP MySQL Client Version', '-', mysql_get_client_info( ), 'info' );
+			$this->html_table_row( 'PHP MySQL Client Version', $this->mysql_version, mysql_get_client_info( ), 'info' );
 		}
 
 		// Test MySQL Server Version
 		if ( $this->db_link != false && is_callable( 'mysql_get_server_info' ) ) {
-			$mysql_version = mysql_get_server_info( $this->db_link );
+			$mysql_version = preg_replace( '/[^0-9.].*/', '', mysql_get_server_info( $this->db_link ) );
 			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
 				$this->html_table_row( 'MySQL Version', $this->mysql_version, $mysql_version, 'success' );
 			} else {
@@ -131,6 +131,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'GD', 'Required', 'Not installed', 'error' );
 		} else {
 			$this->html_table_row( 'GD', 'Required', 'Installed', 'success' );
+		}
+
+		if ( !is_callable( 'ftp_connect' ) ) {
+			$this->html_table_row( 'FTP', 'Recommended', 'Not installed', 'error' );
+		} else {
+			$this->html_table_row( 'FTP', 'Recommended', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'exif_read_data' ) ) {
@@ -185,6 +191,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'Hash', 'Optionnal', 'Installed', 'success' );
 		}
 
+		if ( !is_callable( 'set_time_limit' ) ) {
+			$this->html_table_row( 'set_time_limit', 'Optionnal', 'Not Available', 'info' );
+		} else {
+			$this->html_table_row( 'set_time_limit', 'Optionnal', 'Available', 'success' );
+		}
+
 		$this->html_table_close( );
 	}
 
@@ -193,8 +205,8 @@ class PHP_WP_Info {
 			return false;
 		}
 
-		$current_modules = (array)$this->_get_apache_modules( );
-		$modules = array( 'mod_deflate', 'mod_env', 'mod_expires', 'mod_headers', 'mod_mime', 'mod_rewrite', 'mod_setenvif' );
+		$current_modules = (array) $this->_get_apache_modules( );
+		$modules = array( 'mod_deflate', 'mod_env', 'mod_expires', 'mod_headers', 'mod_filter', 'mod_mime', 'mod_rewrite', 'mod_setenvif' );
 
 		$this->html_table_open( 'Apache Modules', '', 'Required', 'Current' );
 
@@ -211,39 +223,186 @@ class PHP_WP_Info {
 	}
 
 	public function test_php_config( ) {
-		$this->html_table_open( 'PHP Configuration', '', 'Required', 'Current' );
+		$this->html_table_open( 'PHP Configuration', '', 'Recommended', 'Current' );
 
 		$value = ini_get( 'register_globals' );
-		
-		$this->html_table_close( );
-		
-		
-		ini_get( 'register_long_arrays ' );
-		$value = ini_get( 'upload_tmp_dir' );
-		if ( is_dir( $value ) && @is_writable( $value ) ) {
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'register_globals', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'register_globals', 'Off', 'Off', 'success' );
+		}
 
+		$value = ini_get( 'magic_quotes_runtime' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'magic_quotes_runtime', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'magic_quotes_runtime', 'Off', 'Off', 'success' );
 		}
-		ini_get( 'memory_limit' );
-		ini_get( 'upload_max_filesize' );
-		ini_get( 'post_max_size' );
-		ini_get( 'short_open_tag ' );
-		ini_get( 'safe_mode' );
-		ini_get( 'open_basedir' );
-		ini_get( 'zlib.output_compression' );
-		ini_get( 'output_handler' );
+
+		$value = ini_get( 'magic_quotes_sybase' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'magic_quotes_sybase', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'magic_quotes_sybase', 'Off', 'Off', 'success' );
+		}
+
+		$value = ini_get( 'register_long_arrays' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'register_long_arrays', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'register_long_arrays', 'Off', 'Off', 'success' );
+		}
+
+		$value = ini_get( 'register_argc_argv ' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'register_argc_argv ', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'register_argc_argv ', 'Off', 'Off', 'success' );
+		}
+
+		$value = ini_get( 'memory_limit' );
+		if ( intval($value) < 64 ) {
+			$this->html_table_row( 'memory_limit', '64M', $value, 'error' );
+		} else {
+			$this->html_table_row( 'memory_limit', '64M', $value, 'success' );
+		}
+
+		$value = ini_get( 'file_uploads' );
+		if ( strtolower($value) == 'on' || $value == '1' ) {
+			$this->html_table_row( 'file_uploads', 'On', 'On', 'success' );
+		} else {
+			$this->html_table_row( 'file_uploads', 'On', 'Off', 'error' );
+		}
+
+		$value = ini_get( 'upload_max_filesize' );
+		if ( intval($value) < 32 ) {
+			$this->html_table_row( 'upload_max_filesize', '32M', $value, 'warning' );
+		} else {
+			$this->html_table_row( 'upload_max_filesize', '32M', $value, 'success' );
+		}
+
+		$value = ini_get( 'post_max_size' );
+		if ( intval($value)  < 32 ) {
+			$this->html_table_row( 'post_max_size', '32M', $value, 'warning' );
+		} else {
+			$this->html_table_row( 'post_max_size', '32M', $value, 'success' );
+		}
+
+		$value = ini_get( 'short_open_tag' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'short_open_tag', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'short_open_tag', 'Off', 'Off', 'success' );
+		}
+
+		$value = ini_get( 'safe_mode' );
+		if ( strtolower($value) == 'on' ) {
+			$this->html_table_row( 'safe_mode', 'Off', 'On', 'warning' );
+		} else {
+			$this->html_table_row( 'safe_mode', 'Off', 'Off', 'success' );
+		}
+
+		$value = ini_get( 'open_basedir' );
+		$this->html_table_row( 'open_basedir', '', $value, 'info' );
+
+		$value = ini_get( 'zlib.output_compression' );
+		$this->html_table_row( 'zlib.output_compression', '', $value, 'info' );
+
+		$value = ini_get( 'output_handler' );
+		$this->html_table_row( 'output_handler', '', $value, 'info' );
+
+		$value = ini_get( 'expose_php' );
+		$this->html_table_row( 'expose_php', '0 or Off', $value, 'info' );
+
+		$value = ini_get( 'upload_tmp_dir' );
+		$this->html_table_row( 'upload_tmp_dir', '', $value, 'info' );
+		if ( is_dir( $value ) && @is_writable( $value ) ) {
+			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'Yes', 'success' );
+		} else {
+			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'No', 'error' );
+		}
 			
-		if ( is_callable('apc_fetch') ) {
-			init_get('apc.shm_size');
+		if ( is_callable('apc_store') ) {
+			$value = init_get('apc.shm_size');
+			if ( intval($value) < 32 ) {
+				$this->html_table_row( 'apc.shm_size', '32M', $value, 'warning' );
+			} else {
+				$this->html_table_row( 'apc.shm_size', '32M', $value, 'success' );
+			}
 		}
+
+		$this->html_table_close( );
 	}
 
 	public function test_mysql_config( ) {
-		// Query cache
-		// Log slow queries
+		if ( $this->db_link == false ) {
+			return false;
+		}
+
+		$this->html_table_open( 'MySQL Configuration', '', 'Recommended', 'Current' );
+
+		$result = mysql_query("SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
+		if ( $result) {
+		   while ($row = mysql_fetch_assoc($result)) {
+		   		if ( strtolower($row['Value']) == 'yes' ) {
+		   			$this->html_table_row( "Query cache", 'Yes', 'Yes', 'success' );
+		   		} else {
+		   			$this->html_table_row( "Query cache", 'Yes', 'False', 'error' );
+		   		}
+		   }
+		}
+
+		$result = mysql_query("SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
+		if ( $result) {
+		   while ($row = mysql_fetch_assoc($result)) {
+		   		if ( intval($row['Value']) >= 8388608 ) {
+		   			$this->html_table_row( "Query cache size", '8M', $this->_format_bytes((int)$row['Value']), 'success' );
+		   		} else {
+		   			$this->html_table_row( "Query cache size", '8M', $this->_format_bytes((int)$row['Value']), 'error' );
+		   		}
+		   }
+		}
+
+		$result = mysql_query("SHOW VARIABLES LIKE 'query_cache_type'", $this->db_link );
+		if ( $result) {
+		   while ($row = mysql_fetch_assoc($result)) {
+		   		if ( strtolower($row['Value']) == 'on' || strtolower($row['Value']) == '1' ) {
+		   			$this->html_table_row( "Query cache type", '1 or on', strtolower($row['Value']), 'success' );
+		   		} else {
+		   			$this->html_table_row( "Query cache type", '1', strtolower($row['Value']), 'error' );
+		   		}
+		   }
+		}
+
+		$result = mysql_query("SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
+		if ( $result) {
+		   while ($row = mysql_fetch_assoc($result)) {
+		   		if ( strtolower($row['Value']) == 'yes' ) {
+		   			$this->html_table_row( "Log slow queries", 'Yes', 'Yes', 'success' );
+		   		} else {
+		   			$this->html_table_row( "Log slow queries", 'Yes', 'False', 'error' );
+		   		}
+		   }
+		}
+
+		$result = mysql_query("SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
+		if ( $result) {
+		   while ($row = mysql_fetch_assoc($result)) {
+		   		if ( intval($row['Value']) < 2 ) {
+		   			$this->html_table_row( "Long query time", '2', ((int)$row['Value']), 'success' );
+		   		} else {
+		   			$this->html_table_row( "Long query time", '2', ((int)$row['Value']), 'error' );
+		   		}
+		   }
+		}
+
+		$this->html_table_close( );
 	}
 	
 	public function test_mail() {
-		
+		$this->html_table_open( 'Email Configuration', '', '', '' );
+		$this->html_form_email();
+		$this->html_table_close( );
 	}
 
 	/**
@@ -263,7 +422,7 @@ class PHP_WP_Info {
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;}</style>' . "\n";
 		$output .= '<!--[if lt IE 9]> <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
 		$output .= '</head>' . "\n";
-		$output .= '<body style="padding-top:10px;">' . "\n";
+		$output .= '<body style="padding:10px 0;">' . "\n";
 		$output .= '<div class="container">' . "\n";
 		$output .= '<div class="navbar">' . "\n";
 		$output .= '<div class="navbar-inner">' . "\n";
@@ -305,11 +464,15 @@ class PHP_WP_Info {
 		$output .= '<table class="table table-bordered">' . "\n";
 		$output .= '<caption>' . $title . '</caption>' . "\n";
 		$output .= '<thead>' . "\n";
-		$output .= '<tr>' . "\n";
-		$output .= '<th width="40%">' . $col1 . '</th>' . "\n";
-		$output .= '<th width="30%">' . $col2 . '</th>' . "\n";
-		$output .= '<th width="30%">' . $col3 . '</th>' . "\n";
-		$output .= '</tr>' . "\n";
+
+		if ( !empty($col1) || !empty($col2) || !empty($col3) ) {
+			$output .= '<tr>' . "\n";
+			$output .= '<th width="40%">' . $col1 . '</th>' . "\n";
+			$output .= '<th width="30%">' . $col2 . '</th>' . "\n";
+			$output .= '<th width="30%">' . $col3 . '</th>' . "\n";
+			$output .= '</tr>' . "\n";
+		}
+
 		$output .= '</thead>' . "\n";
 		$output .= '<tbody>' . "\n";
 
@@ -342,6 +505,11 @@ class PHP_WP_Info {
 		echo $output;
 	}
 
+	/**
+	 * Form HTML for MySQL Login
+	 * @param  boolean $show_error_credentials [description]
+	 * @return void                          [description]
+	 */
 	public function html_form_mysql( $show_error_credentials = false ) {
 		$output = '';
 		$output .= '<tr>' . "\n";
@@ -366,12 +534,52 @@ class PHP_WP_Info {
 		echo $output;
 	}
 
+	/**
+	 * Form for test email
+	  *
+	 * @return void                          [description]
+	 */
+	public function html_form_email() {
+		$output = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="3">' . "\n";
+
+		if ( isset($_POST['test-email']) && isset($_POST['mail']) ) {
+			if(!filter_var($_POST['mail'], FILTER_VALIDATE_EMAIL)) { // Invalid
+				$output .= '<div class="alert alert-error">Email invalid.</div>' . "\n";
+			} else { // Valid mail
+				if ( mail($_POST['mail'], 'Email test with PHP WP Info', "Line 1\nLine 2\nLine 3\nGreat !") ) { // Valid send
+					$output .= '<div class="alert alert-success">Mail sent with success.</div>' . "\n";
+				} else { // Error send
+					$output .= '<div class="alert alert-error">An error occured during mail sending.</div>' . "\n";
+				}
+			}
+		}
+
+		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
+		$output .= '<i class="icon-envelope"></i> <input type="mail" class="input-large" name="mail" placeholder="test@sample.com" value="">' . "\n";
+		$output .= '<button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
+		$output .= '<span class="help-inline">Send a test email to check that server is doing its job</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		echo $output;
+	}
+
+	/**
+	 * Stripslashes array
+	 * @param  [type] $value [description]
+	 * @return [type]        [description]
+	 */
 	public function stripslashes_deep( $value ) {
 		return is_array( $value ) ? array_map( array( &$this, 'stripslashes_deep' ), $value ) : stripslashes( $value );
 	}
 
 	/**
 	 * Detect current webserver
+	 *
+	 * @return string        [description]
 	 */
 	private function _get_current_webserver( ) {
 		if ( stristr( $_SERVER['SERVER_SOFTWARE'], 'apache' ) !== false ) :
@@ -391,6 +599,8 @@ class PHP_WP_Info {
 
 	/**
 	 * Method for get apaches modules with Apache modules or CGI with .HTACCESS
+	 *
+	 * @return string        [description]
 	 */
 	private function _get_apache_modules( ) {
 		$apache_modules = (is_callable( 'apache_get_modules' ) ? apache_get_modules( ) : false);
@@ -408,6 +618,9 @@ class PHP_WP_Info {
 			if ( isset( $_SERVER['http_mod_expires'] ) ) {
 				$apache_modules[] = 'mod_expires';
 			}
+			if ( isset( $_SERVER['http_mod_filter'] ) ) {
+				$apache_modules[] = 'mod_filter';
+			}
 			if ( isset( $_SERVER['http_mod_headers'] ) ) {
 				$apache_modules[] = 'mod_headers';
 			}
@@ -421,6 +634,17 @@ class PHP_WP_Info {
 
 		return $apache_modules;
 	}
+
+	/**
+	 * Get humans values, take from http://php.net/manual/de/function.filesize.php
+	 * @param  integer  $bytes     [description]
+	 * @return string          	   [description]
+	 */
+	function _format_bytes($size) {
+		$units = array(' B', ' KB', ' MB', ' GB', ' TB');
+		for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
+		return round($size, 2).$units[$i];
+	} 
 
 }
 
