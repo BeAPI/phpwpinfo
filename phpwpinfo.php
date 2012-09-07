@@ -17,6 +17,13 @@ class PHP_WP_Info {
 	public function __construct( ) {
 		@session_start( );
 
+		// Check GET for phpinfo
+		if ( isset( $_GET ) && isset( $_GET['phpinfo'] ) && $_GET['phpinfo'] == 'true' ) {
+			phpinfo( );
+			die( );
+		}
+
+		// Check GET for logout MySQL
 		if ( isset( $_GET ) && isset( $_GET['logout'] ) && $_GET['logout'] == 'true' ) {
 			// Flush old session if POST submit
 			unset( $_SESSION['credentials'] );
@@ -25,7 +32,8 @@ class PHP_WP_Info {
 			exit( );
 		}
 
-		if ( isset( $_POST ) && isset( $_POST['mysql-connection'] ) ) {// Check POST data
+		// Check POST for MySQL login
+		if ( isset( $_POST ) && isset( $_POST['mysql-connection'] ) ) {
 			// Flush old session if POST submit
 			unset( $_SESSION['credentials'] );
 
@@ -43,7 +51,7 @@ class PHP_WP_Info {
 		}
 
 		// Check credentials
-		if ( !empty( $this->db_infos ) && is_array( $this->db_infos ) ) {
+		if ( !empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysql_connect' ) ) {
 			$this->db_link = mysql_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
 			if ( $this->db_link == false ) {
 				unset( $_SESSION['credentials'] );
@@ -60,6 +68,7 @@ class PHP_WP_Info {
 		$this->test_php_extensions( );
 		$this->test_mysql_config( );
 		$this->test_apache_modules( );
+		$this->test_mail( );
 
 		$this->get_footer( );
 	}
@@ -74,6 +83,14 @@ class PHP_WP_Info {
 		$this->html_table_row( 'Web server', '-', $this->_get_current_webserver( ), 'info' );
 
 		// Test PHP Version
+		$sapi_type = php_sapi_name( );
+		if ( substr( $sapi_type, 0, 3 ) == 'cgi' ) {
+			$this->html_table_row( 'PHP Type', '', 'CGI with Apache Worker or another webserver', 'success' );
+		} else {
+			$this->html_table_row( 'PHP Type', '', 'Apache Modules (low performance)', 'warning' );
+		}
+
+		// Test PHP Version
 		$php_version = phpversion( );
 		if ( version_compare( $php_version, $this->php_version, '>=' ) ) {
 			$this->html_table_row( 'PHP Version', $this->php_version, $php_version, 'success' );
@@ -82,7 +99,7 @@ class PHP_WP_Info {
 		}
 
 		// Test MYSQL Client extensions/version
-		if ( !extension_loaded( 'mysql' ) ) {
+		if ( !extension_loaded( 'mysql' ) || !is_callable( 'mysql_connect' ) ) {
 			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Not installed', 'error' );
 		} else {
 			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Installed', 'success' );
@@ -90,7 +107,7 @@ class PHP_WP_Info {
 		}
 
 		// Test MySQL Server Version
-		if ( $this->db_link != false ) {
+		if ( $this->db_link != false && is_callable( 'mysql_get_server_info' ) ) {
 			$mysql_version = mysql_get_server_info( $this->db_link );
 			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
 				$this->html_table_row( 'MySQL Version', $this->mysql_version, $mysql_version, 'success' );
@@ -110,43 +127,123 @@ class PHP_WP_Info {
 	public function test_php_extensions( ) {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Current' );
 
-		if ( !extension_loaded( 'gd' ) ) {
-			$this->html_table_row( 'GD Extension', 'Required', 'Not installed', 'error' );
+		if ( !is_callable( 'gd_info' ) ) {
+			$this->html_table_row( 'GD', 'Required', 'Not installed', 'error' );
 		} else {
-			$this->html_table_row( 'GD Extension', 'Required', 'Installed', 'success' );
+			$this->html_table_row( 'GD', 'Required', 'Installed', 'success' );
 		}
 
-		if ( !extension_loaded( 'curl' ) ) {
-			$this->html_table_row( 'CURL Extension', 'Recommended', 'Not installed', 'error' );
+		if ( !is_callable( 'exif_read_data' ) ) {
+			$this->html_table_row( 'Exif', 'Recommended', 'Not installed', 'error' );
 		} else {
-			$this->html_table_row( 'CURL Extension', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'Exif', 'Recommended', 'Installed', 'success' );
 		}
 
-		if ( extension_loaded( 'eaccelerator' ) ) {
-			$this->html_table_row( 'Opcode Extension (APC or Xcache or eAccelerator)', 'Recommended', 'eAccelerator Installed', 'success' );
-		} elseif ( extension_loaded( 'xcache' ) ) {
-			$this->html_table_row( 'Opcode Extension (APC or Xcache or eAccelerator)', 'Recommended', 'XCache Installed', 'success' );
-		} elseif ( extension_loaded( 'apc' ) ) {
-			$this->html_table_row( 'Opcode Extension (APC or Xcache or eAccelerator)', 'Recommended', 'APC Installed', 'success' );
+		if ( !is_callable( 'curl_init' ) ) {
+			$this->html_table_row( 'CURL', 'Recommended', 'Not installed', 'error' );
 		} else {
-			$this->html_table_row( 'Opcode Extension (APC or Xcache or eAccelerator)', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'CURL', 'Recommended', 'Installed', 'success' );
+		}
+
+		if ( is_callable( 'eaccelerator_put' ) ) {
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'eAccelerator Installed', 'success' );
+		} elseif ( is_callable( 'xcache_set' ) ) {
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'XCache Installed', 'success' );
+		} elseif ( is_callable( 'apc_store' ) ) {
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'APC Installed', 'success' );
+		} else {
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'Not installed', 'error' );
+		}
+
+		if ( !is_callable( 'mb_substr' ) ) {
+			$this->html_table_row( 'Multibyte String', 'Recommended', 'Not installed', 'error' );
+		} else {
+			$this->html_table_row( 'Multibyte String', 'Recommended', 'Installed', 'success' );
+		}
+
+		if ( !class_exists( 'tidy' ) ) {
+			$this->html_table_row( 'Tidy', 'Optionnal', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Tidy', 'Optionnal', 'Installed', 'success' );
+		}
+
+		if ( !is_callable( 'mb_substr' ) ) {
+			$this->html_table_row( 'Memcache', 'Optionnal', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Memcache', 'Optionnal', 'Installed', 'success' );
+		}
+
+		if ( !is_callable( 'finfo_open' ) && !is_callable( 'mime_content_type' ) ) {
+			$this->html_table_row( 'Mime type', 'Optionnal', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Mime type', 'Optionnal', 'Installed', 'success' );
+		}
+
+		if ( !is_callable( 'hash' ) && !is_callable( 'mhash' ) ) {
+			$this->html_table_row( 'Hash', 'Optionnal', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Hash', 'Optionnal', 'Installed', 'success' );
 		}
 
 		$this->html_table_close( );
-		// GD
-		// CURL
-		// APC or Xcache or Memcache
 	}
 
 	public function test_apache_modules( ) {
+		if ( $this->_get_current_webserver( ) != 'Apache' ) {
+			return false;
+		}
 
+		$current_modules = (array)$this->_get_apache_modules( );
+		$modules = array( 'mod_deflate', 'mod_env', 'mod_expires', 'mod_headers', 'mod_mime', 'mod_rewrite', 'mod_setenvif' );
+
+		$this->html_table_open( 'Apache Modules', '', 'Required', 'Current' );
+
+		foreach ( $modules as $module ) {
+			$name = ucfirst( str_replace( 'mod_', '', $module ) );
+			if ( !in_array( $module, $current_modules ) ) {
+				$this->html_table_row( $name, 'Recommended', 'Not installed', 'error' );
+			} else {
+				$this->html_table_row( $name, 'Recommended', 'Installed', 'success' );
+			}
+		}
+
+		$this->html_table_close( );
 	}
 
 	public function test_php_config( ) {
+		$this->html_table_open( 'PHP Configuration', '', 'Required', 'Current' );
 
+		$value = ini_get( 'register_globals' );
+		
+		$this->html_table_close( );
+		
+		
+		ini_get( 'register_long_arrays ' );
+		$value = ini_get( 'upload_tmp_dir' );
+		if ( is_dir( $value ) && @is_writable( $value ) ) {
+
+		}
+		ini_get( 'memory_limit' );
+		ini_get( 'upload_max_filesize' );
+		ini_get( 'post_max_size' );
+		ini_get( 'short_open_tag ' );
+		ini_get( 'safe_mode' );
+		ini_get( 'open_basedir' );
+		ini_get( 'zlib.output_compression' );
+		ini_get( 'output_handler' );
+			
+		if ( is_callable('apc_fetch') ) {
+			init_get('apc.shm_size');
+		}
 	}
 
 	public function test_mysql_config( ) {
+		// Query cache
+		// Log slow queries
+	}
+	
+	public function test_mail() {
+		
 	}
 
 	/**
@@ -173,7 +270,10 @@ class PHP_WP_Info {
 		$output .= '<a class="brand" href="#">PHP WordPress Info</a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
 		$output .= '<li><a href="https://github.com/herewithme/phpwpinfo">Project on Github</a></li>' . "\n";
-		$output .= '<li><a href="?logout=true">Logout MySQL</a></li>' . "\n";
+		$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
+		if ( $this->db_link != false ) {
+			$output .= '<li><a href="?logout=true">Logout MySQL</a></li>' . "\n";
+		}
 		$output .= '</ul>' . "\n";
 		$output .= '</div>' . "\n";
 		$output .= '</div>' . "\n";
@@ -206,9 +306,9 @@ class PHP_WP_Info {
 		$output .= '<caption>' . $title . '</caption>' . "\n";
 		$output .= '<thead>' . "\n";
 		$output .= '<tr>' . "\n";
-		$output .= '<th>' . $col1 . '</th>' . "\n";
-		$output .= '<th>' . $col2 . '</th>' . "\n";
-		$output .= '<th>' . $col3 . '</th>' . "\n";
+		$output .= '<th width="40%">' . $col1 . '</th>' . "\n";
+		$output .= '<th width="30%">' . $col2 . '</th>' . "\n";
+		$output .= '<th width="30%">' . $col3 . '</th>' . "\n";
 		$output .= '</tr>' . "\n";
 		$output .= '</thead>' . "\n";
 		$output .= '<tbody>' . "\n";
@@ -270,6 +370,9 @@ class PHP_WP_Info {
 		return is_array( $value ) ? array_map( array( &$this, 'stripslashes_deep' ), $value ) : stripslashes( $value );
 	}
 
+	/**
+	 * Detect current webserver
+	 */
 	private function _get_current_webserver( ) {
 		if ( stristr( $_SERVER['SERVER_SOFTWARE'], 'apache' ) !== false ) :
 			return 'Apache';
@@ -284,6 +387,39 @@ class PHP_WP_Info {
 		else :
 			return 'Not detected';
 		endif;
+	}
+
+	/**
+	 * Method for get apaches modules with Apache modules or CGI with .HTACCESS
+	 */
+	private function _get_apache_modules( ) {
+		$apache_modules = (is_callable( 'apache_get_modules' ) ? apache_get_modules( ) : false);
+
+		if ( $apache_modules === false && isset( $_SERVER['http_mod_env'] ) ) {
+			// Test with htaccess to get ENV values
+			$apache_modules = array( 'mod_env' );
+
+			if ( isset( $_SERVER['http_mod_rewrite'] ) ) {
+				$apache_modules[] = 'mod_rewrite';
+			}
+			if ( isset( $_SERVER['http_mod_deflate'] ) ) {
+				$apache_modules[] = 'mod_deflate';
+			}
+			if ( isset( $_SERVER['http_mod_expires'] ) ) {
+				$apache_modules[] = 'mod_expires';
+			}
+			if ( isset( $_SERVER['http_mod_headers'] ) ) {
+				$apache_modules[] = 'mod_headers';
+			}
+			if ( isset( $_SERVER['http_mod_mime'] ) ) {
+				$apache_modules[] = 'mod_mime';
+			}
+			if ( isset( $_SERVER['http_mod_setenvif'] ) ) {
+				$apache_modules[] = 'mod_setenvif';
+			}
+		}
+
+		return $apache_modules;
 	}
 
 }
