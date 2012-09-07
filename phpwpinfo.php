@@ -20,7 +20,7 @@ class PHP_WP_Info {
 		// Check GET for phpinfo
 		if ( isset( $_GET ) && isset( $_GET['phpinfo'] ) && $_GET['phpinfo'] == 'true' ) {
 			phpinfo( );
-			die( );
+			exit( );
 		}
 
 		// Check GET for logout MySQL
@@ -57,6 +57,29 @@ class PHP_WP_Info {
 				unset( $_SESSION['credentials'] );
 				$this->db_infos = false;
 			}
+		}
+
+		// Check GET for MYSQL variables
+		if ( $this->db_link != false && isset( $_GET ) && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] == 'true' ) {
+			$result = mysql_query('SHOW VARIABLES');
+			if (!$result) {
+			    echo "Could not successfully run query ($sql) from DB: " . mysql_error();
+			    exit();
+			}
+
+			if (mysql_num_rows($result) == 0) {
+			    echo "No rows found, nothing to print so am exiting";
+			    exit();
+			}
+
+			$output = array();
+			while ($row = mysql_fetch_assoc($result)) {
+			    $output[$row['Variable_name']] = $row['Value'];
+			}
+			$this->get_header( );
+			echo $this->_variable_to_html($output);
+			$this->get_footer( );
+			exit( );
 		}
 	}
 
@@ -442,6 +465,7 @@ class PHP_WP_Info {
 			$output .= '<li class="dropdown">' . "\n";
 				$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">MySQL <b class="caret"></b></a>' . "\n";
 				$output .= '<ul class="dropdown-menu">' . "\n";
+					$output .= '<li><a href="?mysql-variables=true">MySQL Variables</a></li>' . "\n";
 					$output .= '<li><a href="?logout=true">Logout</a></li>' . "\n";
 				$output .= '</ul>' . "\n";
 			$output .= '</li>' . "\n";
@@ -661,12 +685,34 @@ class PHP_WP_Info {
 	 * @param  integer  $bytes     [description]
 	 * @return string          	   [description]
 	 */
-	function _format_bytes($size) {
+	private function _format_bytes($size) {
 		$units = array(' B', ' KB', ' MB', ' GB', ' TB');
 		for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
 		return round($size, 2).$units[$i];
 	} 
 
+	private function _variable_to_html($variable) {
+	    if ($variable === true) {
+	        return 'true';
+	    } else if ($variable === false) {
+	        return 'false';
+	    } else if ($variable === null) {
+	        return 'null';
+	    } else if (is_array($variable)) {
+	        $html = "<table class='table table-bordered'>\n";
+	        $html .= "<thead><tr><td><b>Key</b></td><td><b>Value</b></td></tr></thead>\n";
+	        $html .= "<tbody>\n";
+	        foreach ($variable as $key => $value) {
+	            $value = $this->_variable_to_html($value);
+	            $html .= "<tr><td>$key</td><td>$value</td></tr>\n";
+	        }
+	        $html .= "</tbody>\n";
+	        $html .= "</table>";
+	        return $html;
+	    } else {
+	        return strval($variable);
+	    }
+	}
 }
 
 // Init render
