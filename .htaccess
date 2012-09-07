@@ -1,0 +1,29 @@
+# BEGIN PHP WordPress Info
+<IfModule mod_env.c>
+	SetEnv http_mod_env on
+	
+	<IfModule mod_rewrite.c>
+		SetEnv http_mod_rewrite on
+	</IfModule>
+	
+	<IfModule mod_deflate.c>
+		SetEnv http_mod_deflate on
+	</IfModule>
+	
+	<IfModule mod_expires.c>
+		SetEnv http_mod_expires on
+	</IfModule>
+	
+	<IfModule mod_headers.c>
+		SetEnv http_mod_headers on
+	</IfModule>
+	
+	<IfModule mod_mime.c>
+		SetEnv http_mod_mime on
+	</IfModule>
+	
+	<IfModule mod_setenvif.c>
+		SetEnv http_mod_setenvif on
+	</IfModule>
+</IfModule>
+# END PHP WordPress Info
