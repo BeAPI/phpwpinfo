@@ -168,33 +168,33 @@ class PHP_WP_Info {
 		}
 
 		if ( !class_exists( 'tidy' ) ) {
-			$this->html_table_row( 'Tidy', 'Optionnal', 'Not installed', 'info' );
+			$this->html_table_row( 'Tidy', 'Optional', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Tidy', 'Optionnal', 'Installed', 'success' );
+			$this->html_table_row( 'Tidy', 'Optional', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'mb_substr' ) ) {
-			$this->html_table_row( 'Memcache', 'Optionnal', 'Not installed', 'info' );
+			$this->html_table_row( 'Memcache', 'Optional', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Memcache', 'Optionnal', 'Installed', 'success' );
+			$this->html_table_row( 'Memcache', 'Optional', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'finfo_open' ) && !is_callable( 'mime_content_type' ) ) {
-			$this->html_table_row( 'Mime type', 'Optionnal', 'Not installed', 'info' );
+			$this->html_table_row( 'Mime type', 'Optional', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Mime type', 'Optionnal', 'Installed', 'success' );
+			$this->html_table_row( 'Mime type', 'Optional', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'hash' ) && !is_callable( 'mhash' ) ) {
-			$this->html_table_row( 'Hash', 'Optionnal', 'Not installed', 'info' );
+			$this->html_table_row( 'Hash', 'Optional', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Hash', 'Optionnal', 'Installed', 'success' );
+			$this->html_table_row( 'Hash', 'Optional', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'set_time_limit' ) ) {
-			$this->html_table_row( 'set_time_limit', 'Optionnal', 'Not Available', 'info' );
+			$this->html_table_row( 'set_time_limit', 'Optional', 'Not Available', 'info' );
 		} else {
-			$this->html_table_row( 'set_time_limit', 'Optionnal', 'Available', 'success' );
+			$this->html_table_row( 'set_time_limit', 'Optional', 'Available', 'success' );
 		}
 
 		$this->html_table_close( );
@@ -321,6 +321,14 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'No', 'error' );
 		}
+
+		$value = dirname(__FILE__);
+		$this->html_table_row( 'Current dir', '', $value, 'info' );
+		if ( is_dir( $value ) && @is_writable( $value ) ) {
+			$this->html_table_row( 'Current dir writable ?', 'Yes', 'Yes', 'success' );
+		} else {
+			$this->html_table_row( 'Current dir writable ?', 'Yes', 'No', 'error' );
+		}
 			
 		if ( is_callable('apc_store') ) {
 			$value = init_get('apc.shm_size');
@@ -429,10 +437,23 @@ class PHP_WP_Info {
 		$output .= '<a class="brand" href="#">PHP WordPress Info</a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
 		$output .= '<li><a href="https://github.com/herewithme/phpwpinfo">Project on Github</a></li>' . "\n";
-		$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
+		
 		if ( $this->db_link != false ) {
-			$output .= '<li><a href="?logout=true">Logout MySQL</a></li>' . "\n";
+			$output .= '<li class="dropdown">' . "\n";
+				$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">MySQL <b class="caret"></b></a>' . "\n";
+				$output .= '<ul class="dropdown-menu">' . "\n";
+					$output .= '<li><a href="?logout=true">Logout</a></li>' . "\n";
+				$output .= '</ul>' . "\n";
+			$output .= '</li>' . "\n";
 		}
+
+		$output .= '<li class="dropdown">' . "\n";
+			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b></a>' . "\n";
+			$output .= '<ul class="dropdown-menu">' . "\n";
+				$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
+			$output .= '</ul>' . "\n";
+		$output .= '</li>' . "\n";
+
 		$output .= '</ul>' . "\n";
 		$output .= '</div>' . "\n";
 		$output .= '</div>' . "\n";
