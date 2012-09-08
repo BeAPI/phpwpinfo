@@ -117,14 +117,14 @@ class PHP_WP_Info {
 		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Current' );
 
 		// Webserver used
-		$this->html_table_row( 'Web server', '-', $this->_get_current_webserver( ), 'info' );
+		$this->html_table_row( 'Web server', $this->_get_current_webserver( ), '', 'info', 2 );
 
 		// Test PHP Version
 		$sapi_type = php_sapi_name( );
 		if ( substr( $sapi_type, 0, 3 ) == 'cgi' ) {
-			$this->html_table_row( 'PHP Type', '-', 'CGI with Apache Worker or another webserver', 'success' );
+			$this->html_table_row( 'PHP Type', 'CGI with Apache Worker or another webserver', '', 'success', 2 );
 		} else {
-			$this->html_table_row( 'PHP Type', '-', 'Apache Module (low performance)', 'warning' );
+			$this->html_table_row( 'PHP Type', 'Apache Module (low performance)', '', 'warning', 2 );
 		}
 
 		// Test PHP Version
@@ -340,27 +340,35 @@ class PHP_WP_Info {
 		}
 
 		$value = ini_get( 'open_basedir' );
-		$this->html_table_row( 'open_basedir', '', $value, 'info' );
+		$this->html_table_row( 'open_basedir', $value, '', 'info', 2 );
 
 		$value = ini_get( 'zlib.output_compression' );
-		$this->html_table_row( 'zlib.output_compression', '', $value, 'info' );
+		$this->html_table_row( 'zlib.output_compression', $value, '', 'info', 2 );
 
 		$value = ini_get( 'output_handler' );
-		$this->html_table_row( 'output_handler', '', $value, 'info' );
+		$this->html_table_row( 'output_handler', $value, '', 'info', 2 );
 
 		$value = ini_get( 'expose_php' );
 		$this->html_table_row( 'expose_php', '0 or Off', $value, 'info' );
 
 		$value = ini_get( 'upload_tmp_dir' );
-		$this->html_table_row( 'upload_tmp_dir', '', $value, 'info' );
+		$this->html_table_row( 'upload_tmp_dir', $value, '', 'info', 2 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
 			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'Yes', 'success' );
 		} else {
 			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'No', 'error' );
 		}
 
+		$value = '/tmp/';
+		$this->html_table_row( 'System temp dir', $value, '', 'info', 2 );
+		if ( is_dir( $value ) && @is_writable( $value ) ) {
+			$this->html_table_row( 'System temp dir writable ?', 'Yes', 'Yes', 'success' );
+		} else {
+			$this->html_table_row( 'System temp dir writable ?', 'Yes', 'No', 'error' );
+		}
+
 		$value = dirname(__FILE__);
-		$this->html_table_row( 'Current dir', '', $value, 'info' );
+		$this->html_table_row( 'Current dir', $value, '', 'info', 2 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
 			$this->html_table_row( 'Current dir writable ?', 'Yes', 'Yes', 'success' );
 		} else {
@@ -558,12 +566,19 @@ class PHP_WP_Info {
 	 * Add table row
 	 * Status available : success, error, warning, info
 	 */
-	public function html_table_row( $col1 = '', $col2 = '', $col3 = '', $status = 'success' ) {
+	public function html_table_row( $col1 = '', $col2 = '', $col3 = '', $status = 'success', $colspan = false ) {
 		$output = '';
 		$output .= '<tr class="' . $status . '">' . "\n";
-		$output .= '<td>' . $col1 . '</td>' . "\n";
-		$output .= '<td>' . $col2 . '</td>' . "\n";
-		$output .= '<td>' . $col3 . '</td>' . "\n";
+
+		if ( $colspan == 2 ) {
+			$output .= '<td>' . $col1 . '</td>' . "\n";
+			$output .= '<td colspan="'.$colspan.'">' . $col2 . '</td>' . "\n";
+		} else {
+			$output .= '<td>' . $col1 . '</td>' . "\n";
+			$output .= '<td>' . $col2 . '</td>' . "\n";
+			$output .= '<td>' . $col3 . '</td>' . "\n";
+		}
+
 		$output .= '</tr>' . "\n";
 
 		echo $output;
