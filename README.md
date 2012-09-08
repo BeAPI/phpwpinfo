@@ -7,12 +7,12 @@ This tool allows you to quickly test environment server where you want to instal
 
 It tests various elements such as 
 	
-	* PHP & MySQL Version
-	* Apache modules
-	* PHP Extensions
-	* PHP Configuration
-	* MySQL Configuration
-	* Mail server feature
+* PHP & MySQL Version
+* Apache modules
+* PHP Extensions
+* PHP Configuration
+* MySQL Configuration
+* Mail server feature
 
 It also allows you to quickly view phpinfo () and MySQL variables.
 Finally, it allows to quickly install (http://www.adminer.org/en/ "adminer") if your server allows it.
