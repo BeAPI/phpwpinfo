@@ -8,6 +8,7 @@ function phpwpinfo( ) {
  * TODO: Use or not session for save DB configuration
  */
 class PHP_WP_Info {
+	private $debug_mode = true;
 	private $php_version = '5.2.4';
 	private $mysql_version = '5.0';
 
@@ -17,18 +18,11 @@ class PHP_WP_Info {
 	public function __construct( ) {
 		@session_start( );
 
-		// Check GET for Install Adminer
-		if ( isset( $_GET ) && isset( $_GET['get_adminer'] ) && $_GET['get_adminer'] == 'true' ) {
-			$code = file_get_contents('http://www.adminer.org/latest-mysql-en.php');
-			if ( !empty($code) ) {
-				$result = file_put_contents(dirname(__FILE__).'/adminer.php', $code);
-				if ( $result != false ) {
-					header( "Location: http://" . $_SERVER['SERVER_NAME'] . '/adminer.php', true );
-					exit( );
-				}
-			}
-
-			die('Impossible to download and install Adminer from this script.');
+		if ( $this->debug == true ) {
+			ini_set('display_errors', 1);
+			ini_set('log_errors', 1);
+			ini_set('error_log', dirname(__FILE__) . '/error_log.txt');
+			error_reporting(E_ALL);
 		}
 
 		// Check GET for phpinfo
@@ -37,64 +31,9 @@ class PHP_WP_Info {
 			exit( );
 		}
 
-		// Check GET for logout MySQL
-		if ( isset( $_GET ) && isset( $_GET['logout'] ) && $_GET['logout'] == 'true' ) {
-			// Flush old session if POST submit
-			unset( $_SESSION['credentials'] );
-
-			header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
-			exit( );
-		}
-
-		// Check POST for MySQL login
-		if ( isset( $_POST ) && isset( $_POST['mysql-connection'] ) ) {
-			// Flush old session if POST submit
-			unset( $_SESSION['credentials'] );
-
-			// Cleanup form data
-			$this->db_infos = $this->stripslashes_deep( $_POST['credentials'] );
-
-			// Check remember checkbox
-			if ( isset( $_POST['remember'] ) ) {
-				$_SESSION['credentials'] = $this->db_infos;
-			}
-		} else {
-			if ( (isset( $_SESSION ) && isset( $_SESSION['credentials'] )) ) {
-				$this->db_infos = $_SESSION['credentials'];
-			}
-		}
-
-		// Check credentials
-		if ( !empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysql_connect' ) ) {
-			$this->db_link = mysql_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
-			if ( $this->db_link == false ) {
-				unset( $_SESSION['credentials'] );
-				$this->db_infos = false;
-			}
-		}
-
-		// Check GET for MYSQL variables
-		if ( $this->db_link != false && isset( $_GET ) && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] == 'true' ) {
-			$result = mysql_query('SHOW VARIABLES');
-			if (!$result) {
-			    echo "Could not successfully run query ($sql) from DB: " . mysql_error();
-			    exit();
-			}
-
-			if (mysql_num_rows($result) == 0) {
-			    echo "No rows found, nothing to print so am exiting";
-			    exit();
-			}
-
-			$output = array();
-			while ($row = mysql_fetch_assoc($result)) {
-			    $output[$row['Variable_name']] = $row['Value'];
-			}
-			$this->get_header( );
-			echo $this->_variable_to_html($output);
-			$this->get_footer( );
-			exit( );
-		}
+		$this->_check_request_mysql();
+		$this->_check_request_adminer();
+		$this->_check_request_phpsecinfo();
 	}
 
 	public function init_all_tests( ) {
@@ -168,6 +107,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'GD', 'Required', 'Not installed', 'error' );
 		} else {
 			$this->html_table_row( 'GD', 'Required', 'Installed', 'success' );
+		}
+
+		if ( !class_exists( 'ZipArchive' ) ) {
+			$this->html_table_row( 'ZIP', 'Recommended', 'Not installed', 'error' );
+		} else {
+			$this->html_table_row( 'ZIP', 'Recommended', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'ftp_connect' ) ) {
@@ -497,10 +442,21 @@ class PHP_WP_Info {
 			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b></a>' . "\n";
 			$output .= '<ul class="dropdown-menu">' . "\n";
 				$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
+
+				// Adminer
 				if ( !is_file(dirname(__FILE__).'/adminer.php') ) {
-					$output .= '<li><a href="?get_adminer=true">Install Adminer</a></li>' . "\n";
+					$output .= '<li><a href="?adminer=install">Install Adminer</a></li>' . "\n";
 				} else {
 					$output .= '<li><a href="adminer.php">Adminer</a></li>' . "\n";
+					$output .= '<li><a href="?adminer=uninstall">Uninstall Adminer</a></li>' . "\n";
+				}
+
+				// PHP sec info
+				if ( !is_dir(dirname(__FILE__).'/phpsecinfo') ) {
+					$output .= '<li><a href="?phpsecinfo=install">Install PhpSecInfo</a></li>' . "\n";
+				} else {
+					$output .= '<li><a href="?phpsecinfo=load">PhpSecInfo</a></li>' . "\n";
+					$output .= '<li><a href="?phpsecinfo=uninstall">Uninstall PhpSecInfo</a></li>' . "\n";
 				}
 			$output .= '</ul>' . "\n";
 		$output .= '</li>' . "\n";
@@ -746,6 +702,186 @@ class PHP_WP_Info {
 	    } else {
 	        return strval($variable);
 	    }
+	}
+
+	function file_get_contents_url($url) {
+		if ( function_exists('curl_init') ) {
+			$curl = curl_init();
+
+			curl_setopt($curl,CURLOPT_URL,$url); //The URL to fetch. This can also be set when initializing a session with curl_init().
+			curl_setopt($curl,CURLOPT_RETURNTRANSFER,TRUE); //TRUE to return the transfer as a string of the return value of curl_exec() instead of outputting it out directly.
+			curl_setopt($curl,CURLOPT_CONNECTTIMEOUT,5); //The number of seconds to wait while trying to connect.	
+
+			curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)'); //The contents of the "User-Agent: " header to be used in a HTTP request.
+			curl_setopt($curl, CURLOPT_FAILONERROR, TRUE); //To fail silently if the HTTP code returned is greater than or equal to 400.
+			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, TRUE); //To follow any "Location: " header that the server sends as part of the HTTP header.
+			curl_setopt($curl, CURLOPT_AUTOREFERER, TRUE); //To automatically set the Referer: field in requests where it follows a Location: redirect.
+			curl_setopt($curl, CURLOPT_TIMEOUT, 10); //The maximum number of seconds to allow cURL functions to execute.	
+
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
+
+			$contents = curl_exec($curl);
+			curl_close($curl);
+
+			return $contents;
+		} else {
+			return file_get_contents( $url );
+		}
+	}
+
+	function rrmdir($dir) {
+		if (is_dir($dir)) {
+			$objects = scandir($dir);
+			foreach ($objects as $object) {
+				if ($object != "." && $object != "..") {
+					if (filetype($dir."/".$object) == "dir") $this->rrmdir($dir."/".$object); else unlink($dir."/".$object);
+				}
+			}
+			reset($objects);
+			rmdir($dir);
+		}
+	}
+
+	private function _check_request_mysql() {
+		// Check GET for logout MySQL
+		if ( isset( $_GET ) && isset( $_GET['logout'] ) && $_GET['logout'] == 'true' ) {
+			// Flush old session if POST submit
+			unset( $_SESSION['credentials'] );
+
+			header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+			exit( );
+		}
+
+		// Check POST for MySQL login
+		if ( isset( $_POST ) && isset( $_POST['mysql-connection'] ) ) {
+			// Flush old session if POST submit
+			unset( $_SESSION['credentials'] );
+
+			// Cleanup form data
+			$this->db_infos = $this->stripslashes_deep( $_POST['credentials'] );
+
+			// Check remember checkbox
+			if ( isset( $_POST['remember'] ) ) {
+				$_SESSION['credentials'] = $this->db_infos;
+			}
+		} else {
+			if ( (isset( $_SESSION ) && isset( $_SESSION['credentials'] )) ) {
+				$this->db_infos = $_SESSION['credentials'];
+			}
+		}
+
+		// Check credentials
+		if ( !empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysql_connect' ) ) {
+			$this->db_link = mysql_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
+			if ( $this->db_link == false ) {
+				unset( $_SESSION['credentials'] );
+				$this->db_infos = false;
+			}
+		}
+
+		// Check GET for MYSQL variables
+		if ( $this->db_link != false && isset( $_GET ) && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] == 'true' ) {
+			$result = mysql_query('SHOW VARIABLES');
+			if (!$result) {
+			    echo "Could not successfully run query ($sql) from DB: " . mysql_error();
+			    exit();
+			}
+
+			if (mysql_num_rows($result) == 0) {
+			    echo "No rows found, nothing to print so am exiting";
+			    exit();
+			}
+
+			$output = array();
+			while ($row = mysql_fetch_assoc($result)) {
+			    $output[$row['Variable_name']] = $row['Value'];
+			}
+			$this->get_header( );
+			echo $this->_variable_to_html($output);
+			$this->get_footer( );
+			exit( );
+		}
+	}
+
+	private function _check_request_adminer() {
+		// Check GET for Install Adminer
+		if ( isset( $_GET ) && isset( $_GET['adminer'] ) && $_GET['adminer'] == 'install' ) {
+			$code = $this->file_get_contents_url('http://www.adminer.org/latest-mysql-en.php');
+			if ( !empty($code) ) {
+				$result = file_put_contents(dirname(__FILE__).'/adminer.php', $code);
+				if ( $result != false ) {
+					header( "Location: http://" . $_SERVER['SERVER_NAME'] . '/adminer.php', true );
+					exit( );
+				}
+			}
+
+			die('Impossible to download and install Adminer with this script.');
+		}
+
+		// Check GET for Uninstall Adminer
+		if ( isset( $_GET ) && isset( $_GET['adminer'] ) && $_GET['adminer'] == 'uninstall' ) {
+			if ( is_file(dirname(__FILE__).'/adminer.php') ) {
+				$result = unlink(dirname(__FILE__).'/adminer.php');
+				if ( $result != false ) {
+					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+					exit( );
+				}
+			}
+
+			die('Impossible remove file and uninstall Adminer with this script.');
+		}
+	}
+
+	private function _check_request_phpsecinfo() {
+		// Check GET for Install phpsecinfo
+		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'install' ) {
+			$code = $this->file_get_contents_url('http://www.herewithme.fr/static/funkatron-phpsecinfo-b5a6155.zip');
+			if ( !empty($code) ) {
+				$result = file_put_contents(dirname(__FILE__).'/phpsecinfo.zip', $code);
+				if ( $result != false ) {
+					$zip = new ZipArchive;
+					if ($zip->open(dirname(__FILE__).'/phpsecinfo.zip') === TRUE) {
+					    $zip->extractTo(dirname(__FILE__).'/phpsecinfo/');
+					    $zip->close();
+
+					    unlink(dirname(__FILE__).'/phpsecinfo.zip');
+					} else {
+						unlink(dirname(__FILE__).'/phpsecinfo.zip');
+					    die('Impossible to uncompress phpsecinfo with this script.');
+					}
+
+					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+					exit( );
+				} else {
+					die('Impossible to install phpsecinfo with this script.');
+				}
+			} else {
+				die('Impossible to download phpsecinfo with this script.');
+			}
+		}
+
+		// Check GET for Uninstall phpsecinfo
+		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'uninstall' ) {
+			if ( is_dir(dirname(__FILE__).'/phpsecinfo/') ) {
+				$this->rrmdir(dirname(__FILE__).'/phpsecinfo/');
+				if ( !is_dir(dirname(__FILE__).'/phpsecinfo/') ) {
+					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+					exit( );
+				}
+			}
+
+			die('Impossible remove file and uninstall phpsecinfo with this script.');
+		}
+
+		// Check GET for load 
+		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'load' ) {
+			if ( is_dir(dirname(__FILE__).'/phpsecinfo/') ) {
+				require(dirname(__FILE__).'/phpsecinfo/funkatron-phpsecinfo-b5a6155/PhpSecInfo/PhpSecInfo.php');
+				phpsecinfo();
+				exit();
+			}
+		}
 	}
 }
 

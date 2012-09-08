@@ -15,4 +15,5 @@ It tests various elements such as
 * Mail server feature
 
 It also allows you to quickly view phpinfo () and MySQL variables.
+
 Finally, it allows to quickly install (http://www.adminer.org/en/ "adminer") if your server allows it.
