@@ -17,6 +17,20 @@ class PHP_WP_Info {
 	public function __construct( ) {
 		@session_start( );
 
+		// Check GET for Install Adminer
+		if ( isset( $_GET ) && isset( $_GET['get_adminer'] ) && $_GET['get_adminer'] == 'true' ) {
+			$code = file_get_contents('http://www.adminer.org/latest-mysql-en.php');
+			if ( !empty($code) ) {
+				$result = file_put_contents(dirname(__FILE__).'/adminer.php', $code);
+				if ( $result != false ) {
+					header( "Location: http://" . $_SERVER['SERVER_NAME'] . '/adminer.php', true );
+					exit( );
+				}
+			}
+
+			die('Impossible to download and install Adminer from this script.');
+		}
+
 		// Check GET for phpinfo
 		if ( isset( $_GET ) && isset( $_GET['phpinfo'] ) && $_GET['phpinfo'] == 'true' ) {
 			phpinfo( );
@@ -475,6 +489,11 @@ class PHP_WP_Info {
 			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b></a>' . "\n";
 			$output .= '<ul class="dropdown-menu">' . "\n";
 				$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
+				if ( !is_file(dirname(__FILE__).'/adminer.php') ) {
+					$output .= '<li><a href="?get_adminer=true">Install Adminer</a></li>' . "\n";
+				} else {
+					$output .= '<li><a href="adminer.php">Adminer</a></li>' . "\n";
+				}
 			$output .= '</ul>' . "\n";
 		$output .= '</li>' . "\n";
 
@@ -700,7 +719,7 @@ class PHP_WP_Info {
 	        return 'null';
 	    } else if (is_array($variable)) {
 	        $html = "<table class='table table-bordered'>\n";
-	        $html .= "<thead><tr><td><b>Key</b></td><td><b>Value</b></td></tr></thead>\n";
+	        $html .= "<thead><tr><th>Key</th><th>Value</th></tr></thead>\n";
 	        $html .= "<tbody>\n";
 	        foreach ($variable as $key => $value) {
 	            $value = $this->_variable_to_html($value);
