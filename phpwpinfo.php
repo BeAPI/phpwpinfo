@@ -294,7 +294,11 @@ class PHP_WP_Info {
 		$this->html_table_row( 'output_handler', $value, '', 'info', 2 );
 
 		$value = ini_get( 'expose_php' );
-		$this->html_table_row( 'expose_php', '0 or Off', $value, 'info' );
+		if ( $value == '0' || strtolower( $value ) == 'off' || empty($value) ) {
+			$this->html_table_row( 'expose_php', '0 or Off', $value, 'success' );
+		} else {
+			$this->html_table_row( 'expose_php', '0 or Off', $value, 'error' );
+		}
 
 		$value = ini_get( 'upload_tmp_dir' );
 		$this->html_table_row( 'upload_tmp_dir', $value, '', 'info', 2 );
@@ -375,7 +379,7 @@ class PHP_WP_Info {
 		$result = mysql_query( "SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
 		if ( $result ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
-				if ( strtolower( $row['Value'] ) == 'yes' ) {
+				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
 					$this->html_table_row( "Log slow queries", 'Yes', 'Yes', 'success' );
 				} else {
 					$this->html_table_row( "Log slow queries", 'Yes', 'False', 'error' );
@@ -386,7 +390,7 @@ class PHP_WP_Info {
 		$result = mysql_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
 		if ( $result ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
-				if ( intval( $row['Value'] ) < 2 ) {
+				if ( intval( $row['Value'] ) <= 2 ) {
 					$this->html_table_row( "Long query time", '2', ((int)$row['Value']), 'success' );
 				} else {
 					$this->html_table_row( "Long query time", '2', ((int)$row['Value']), 'error' );
