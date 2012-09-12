@@ -34,6 +34,7 @@ class PHP_WP_Info {
 		$this->_check_request_mysql( );
 		$this->_check_request_adminer( );
 		$this->_check_request_phpsecinfo( );
+		$this->_check_request_wordpress( );
 	}
 
 	public function init_all_tests( ) {
@@ -202,6 +203,7 @@ class PHP_WP_Info {
 		}
 
 		$this->html_table_close( );
+		return true;
 	}
 
 	public function test_php_config( ) {
@@ -344,7 +346,7 @@ class PHP_WP_Info {
 		$this->html_table_open( 'MySQL Configuration', '', 'Recommended', 'Current' );
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
-		if ( $result ) {
+		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' ) {
 					$this->html_table_row( "Query cache", 'Yes', 'Yes', 'success' );
@@ -355,7 +357,7 @@ class PHP_WP_Info {
 		}
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
-		if ( $result ) {
+		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) >= 8388608 ) {
 					$this->html_table_row( "Query cache size", '8M', $this->_format_bytes( (int)$row['Value'] ), 'success' );
@@ -366,7 +368,7 @@ class PHP_WP_Info {
 		}
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'query_cache_type'", $this->db_link );
-		if ( $result ) {
+		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'on' || strtolower( $row['Value'] ) == '1' ) {
 					$this->html_table_row( "Query cache type", '1 or on', strtolower( $row['Value'] ), 'success' );
@@ -377,7 +379,7 @@ class PHP_WP_Info {
 		}
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
-		if ( $result ) {
+		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
 					$this->html_table_row( "Log slow queries", 'Yes', 'Yes', 'success' );
@@ -388,7 +390,7 @@ class PHP_WP_Info {
 		}
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
-		if ( $result ) {
+		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) <= 2 ) {
 					$this->html_table_row( "Long query time", '2', ((int)$row['Value']), 'success' );
@@ -399,6 +401,7 @@ class PHP_WP_Info {
 		}
 
 		$this->html_table_close( );
+		return true;
 	}
 
 	public function test_form_mail( ) {
@@ -448,7 +451,7 @@ class PHP_WP_Info {
 		$output .= '<li><a href="?phpinfo=true">PHPinfo()</a></li>' . "\n";
 
 		// Adminer
-		if ( !is_file( dirname( __FILE__ ) . '/adminer.php' ) ) {
+		if ( !is_file( dirname( __FILE__ ) . '/adminer.php' ) && is_writable(dirname(__FILE__)) ) {
 			$output .= '<li><a href="?adminer=install">Install Adminer</a></li>' . "\n";
 		} else {
 			$output .= '<li><a href="adminer.php">Adminer</a></li>' . "\n";
@@ -456,12 +459,20 @@ class PHP_WP_Info {
 		}
 
 		// PHP sec info
-		if ( !is_dir( dirname( __FILE__ ) . '/phpsecinfo' ) ) {
+		if ( !is_dir( dirname( __FILE__ ) . '/phpsecinfo' ) && is_writable(dirname(__FILE__) ) && class_exists('ZipArchive') ) {
 			$output .= '<li><a href="?phpsecinfo=install">Install PhpSecInfo</a></li>' . "\n";
 		} else {
 			$output .= '<li><a href="?phpsecinfo=load">PhpSecInfo</a></li>' . "\n";
 			$output .= '<li><a href="?phpsecinfo=uninstall">Uninstall PhpSecInfo</a></li>' . "\n";
 		}
+
+		// WordPress
+		if ( !is_dir( dirname( __FILE__ ) . '/wordpress' ) && is_writable(dirname(__FILE__) )&& class_exists('ZipArchive') ) {
+			$output .= '<li><a href="?wordpress=install">Download & Extract WordPress</a></li>' . "\n";
+		} else {
+			$output .= '<li><a href="wordpress/">WordPress</a></li>' . "\n";
+		}
+
 		$output .= '</ul>' . "\n";
 		$output .= '</li>' . "\n";
 
@@ -717,7 +728,7 @@ class PHP_WP_Info {
 			//The URL to fetch. This can also be set when initializing a session with curl_init().
 			curl_setopt( $curl, CURLOPT_RETURNTRANSFER, TRUE );
 			//TRUE to return the transfer as a string of the return value of curl_exec() instead of outputting it out directly.
-			curl_setopt( $curl, CURLOPT_CONNECTTIMEOUT, 5 );
+			curl_setopt( $curl, CURLOPT_CONNECTTIMEOUT, 15 );
 			//The number of seconds to wait while trying to connect.
 
 			curl_setopt( $curl, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)' );
@@ -728,7 +739,7 @@ class PHP_WP_Info {
 			//To follow any "Location: " header that the server sends as part of the HTTP header.
 			curl_setopt( $curl, CURLOPT_AUTOREFERER, TRUE );
 			//To automatically set the Referer: field in requests where it follows a Location: redirect.
-			curl_setopt( $curl, CURLOPT_TIMEOUT, 10 );
+			curl_setopt( $curl, CURLOPT_TIMEOUT, 300 );
 			//The maximum number of seconds to allow cURL functions to execute.
 
 			curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, FALSE );
@@ -800,7 +811,7 @@ class PHP_WP_Info {
 		if ( $this->db_link != false && isset( $_GET ) && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] == 'true' ) {
 			$result = mysql_query( 'SHOW VARIABLES' );
 			if ( !$result ) {
-				echo "Could not successfully run query ($sql) from DB: " . mysql_error( );
+				echo "Could not successfully run query ( 'SHOW VARIABLES' ) from DB: " . mysql_error( );
 				exit( );
 			}
 
@@ -870,7 +881,7 @@ class PHP_WP_Info {
 					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
 					exit( );
 				} else {
-					die( 'Impossible to install phpsecinfo with this script.' );
+					die( 'Impossible to write phpsecinfo archive with this script.' );
 				}
 			} else {
 				die( 'Impossible to download phpsecinfo with this script.' );
@@ -900,6 +911,35 @@ class PHP_WP_Info {
 		}
 	}
 
+	function _check_request_wordpress() {
+		// Check GET for Install wordpress
+		if ( isset( $_GET ) && isset( $_GET['wordpress'] ) && $_GET['wordpress'] == 'install' ) {
+			if ( !is_file(dirname( __FILE__ ) . '/latest.zip') ) {
+				$code = $this->file_get_contents_url( 'http://wordpress.org/latest.zip' );
+				if ( !empty( $code ) ) {
+					$result = file_put_contents( dirname( __FILE__ ) . '/latest.zip', $code );
+					if ( $result == false ) {
+						die( 'Impossible to write WordPress archive with this script.' );
+					}
+				} else {
+					die( 'Impossible to download WordPress with this script. You can also send WordPress Zip archive via FTP and renme it latest.zip, the script will only try to decompress it.' );
+				}
+			}
+
+			if ( is_file(dirname( __FILE__ ) . '/latest.zip') ) {
+				$zip = new ZipArchive;
+				if ( $zip->open( dirname( __FILE__ ) . '/latest.zip' ) === TRUE ) {
+					$zip->extractTo( dirname( __FILE__ ) . '/' );
+					$zip->close( );
+
+					unlink( dirname( __FILE__ ) . '/latest.zip' );
+				} else {
+					unlink( dirname( __FILE__ ) . '/latest.zip' );
+					die( 'Impossible to uncompress WordPress with this script.' );
+				}
+			}
+		}
+	}
 }
 
 // Init render
