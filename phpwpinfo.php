@@ -44,7 +44,7 @@ class PHP_WP_Info {
 		$this->test_php_extensions( );
 		$this->test_mysql_config( );
 		$this->test_apache_modules( );
-		$this->test_mail( );
+		$this->test_form_mail( );
 
 		$this->get_footer( );
 	}
@@ -143,6 +143,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'Not installed', 'error' );
 		}
 
+		if ( !class_exists( 'Memcache' ) ) {
+			$this->html_table_row( 'Memcache', 'Optional', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Memcache', 'Optional', 'Installed', 'success' );
+		}
+
 		if ( !is_callable( 'mb_substr' ) ) {
 			$this->html_table_row( 'Multibyte String', 'Recommended', 'Not installed', 'error' );
 		} else {
@@ -153,12 +159,6 @@ class PHP_WP_Info {
 			$this->html_table_row( 'Tidy', 'Optional', 'Not installed', 'info' );
 		} else {
 			$this->html_table_row( 'Tidy', 'Optional', 'Installed', 'success' );
-		}
-
-		if ( !is_callable( 'mb_substr' ) ) {
-			$this->html_table_row( 'Memcache', 'Optional', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Memcache', 'Optional', 'Installed', 'success' );
 		}
 
 		if ( !is_callable( 'finfo_open' ) && !is_callable( 'mime_content_type' ) ) {
@@ -401,7 +401,7 @@ class PHP_WP_Info {
 		$this->html_table_close( );
 	}
 
-	public function test_mail( ) {
+	public function test_form_mail( ) {
 		$this->html_table_open( 'Email Configuration', '', '', '' );
 		$this->html_form_email( );
 		$this->html_table_close( );
