@@ -1,4 +1,21 @@
 <?php
+/*
+Copyright 2012  Amaury Balmer (amaury@beapi.fr)
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License, version 2, as 
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
 function phpwpinfo( ) {
 	$info = new PHP_WP_Info( );
 	$info->init_all_tests( );
@@ -489,7 +506,7 @@ class PHP_WP_Info {
 	public function get_footer( ) {
 		$output = '';
 
-		$output .= '<footer>&copy; BeAPI 2012</footer>' . "\n";
+		$output .= '<footer>&copy; <a href="http://beapi.fr">BeAPI</a> '.date('Y').'</footer>' . "\n";
 		$output .= '</div>' . "\n";
 		$output .= '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>' . "\n";
 		$output .= '<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.0/js/bootstrap.min.js"></script>' . "\n";
