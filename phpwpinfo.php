@@ -35,7 +35,7 @@ class PHP_WP_Info {
 	public function __construct( ) {
 		@session_start( );
 
-		if ( $this->debug == true ) {
+		if ( $this->debug_mode == true ) {
 			ini_set( 'display_errors', 1 );
 			ini_set( 'log_errors', 1 );
 			ini_set( 'error_log', dirname( __FILE__ ) . '/error_log.txt' );
