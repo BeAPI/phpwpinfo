@@ -18,9 +18,10 @@ It also allows you to quickly view phpinfo () and MySQL variables.
 
 Finally, it allows (if you server allows it) to quickly install :
 
-* (http://www.adminer.org/en/ "adminer")
-* (http://phpsec.org/projects/phpsecinfo/ "PHPsecinfo")
-* (http://wordpress.org/ "Latest version of WordPress (US)")
+* [Adminer](http://www.adminer.org/en/)
+* [PHPsecinfo](http://phpsec.org/projects/phpsecinfo/)
+* [Latest version of WordPress (US)](http://wordpress.org/)
 
 This script is writted in full PHP and use Bootstrap for HTML/CSS/JS provided by CDN (http://www.bootstrapcdn.com/)
+
 License: GPL v2
