@@ -152,13 +152,15 @@ class PHP_WP_Info {
 		}
 
 		if ( is_callable( 'eaccelerator_put' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'eAccelerator Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'eAccelerator Installed', 'success' );
 		} elseif ( is_callable( 'xcache_set' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'XCache Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'XCache Installed', 'success' );
 		} elseif ( is_callable( 'apc_store' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'APC Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'APC Installed', 'success' );
+		} elseif ( is_callable( 'zend_optimizer_version' ) ) {
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'Zend Optimizer Installed', 'success' );
 		} else {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator)', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'Not installed', 'error' );
 		}
 
 		if ( !class_exists( 'Memcache' ) ) {
