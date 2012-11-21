@@ -441,6 +441,7 @@ class PHP_WP_Info {
 		$output .= '<html lang="en">' . "\n";
 		$output .= '<head>' . "\n";
 		$output .= '<meta charset="utf-8">' . "\n";
+		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHP WordPress Info</title>' . "\n";
 		$output .= '<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.0/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;}</style>' . "\n";
