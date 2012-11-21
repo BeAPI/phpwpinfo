@@ -48,6 +48,16 @@ class PHP_WP_Info {
 			exit( );
 		}
 
+		// Check GET for self-destruction
+		if ( isset( $_GET ) && isset( $_GET['self-destruction'] ) && $_GET['self-destruction'] == 'true' ) {
+			@unlink( __FILE__ );
+			clearstatcache();
+			if ( is_file(__FILE__) ) {
+				die( 'Self-destruction KO ! Sorry, but you must remove me manually !' );
+			}
+			die( 'Self-destruction OK !' );
+		}
+
 		$this->_check_request_mysql( );
 		$this->_check_request_adminer( );
 		$this->_check_request_phpsecinfo( );
@@ -493,6 +503,7 @@ class PHP_WP_Info {
 			$output .= '<li><a href="wordpress/">WordPress</a></li>' . "\n";
 		}
 
+		$output .= '<li><a href="?self-destruction=true">Self-destruction</a></li>' . "\n";
 		$output .= '</ul>' . "\n";
 		$output .= '</li>' . "\n";
 
