@@ -16,6 +16,16 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+define('LOGIN', 	'wordpress');
+define('PASSWORD', 	'wordpress');
+
+if( !isset($_SERVER['PHP_AUTH_USER']) || ($_SERVER['PHP_AUTH_PW'] != PASSWORD || $_SERVER['PHP_AUTH_USER'] != LOGIN) ) {
+	header('WWW-Authenticate: Basic realm="Authentification"');
+	header('HTTP/1.0 401 Unauthorized');
+	echo 'Authentification failed';
+	exit();
+}
+
 function phpwpinfo( ) {
 	$info = new PHP_WP_Info( );
 	$info->init_all_tests( );
