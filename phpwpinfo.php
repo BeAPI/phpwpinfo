@@ -1,6 +1,6 @@
 <?php
 /*
-Copyright 2012  Amaury Balmer (amaury@beapi.fr)
+Copyright 2012-2015 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as 
@@ -97,135 +97,140 @@ class PHP_WP_Info {
 	 * Main test, check if php/mysql are installed and right version for WP
 	 */
 	public function test_versions() {
-		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Current' );
+		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Recommended', 'Current' );
 
 		// Webserver used
-		$this->html_table_row( 'Web server', $this->_get_current_webserver(), '', 'info', 2 );
+		$this->html_table_row( 'Web server', $this->_get_current_webserver(), '', '', 'info', 3 );
 
 		// Test PHP Version
 		$sapi_type = php_sapi_name();
 		if ( strpos( $sapi_type, 'cgi' ) !== false ) {
-			$this->html_table_row( 'PHP Type', 'CGI with Apache Worker or another webserver', '', 'success', 2 );
+			$this->html_table_row( 'PHP Type', 'CGI with Apache Worker or another webserver', '', '','success', 3 );
 		} else {
-			$this->html_table_row( 'PHP Type', 'Apache Module (low performance)', '', 'warning', 2 );
+			$this->html_table_row( 'PHP Type', 'Apache Module (low performance)', '', '', 'warning', 3 );
 		}
 
 		// Test PHP Version
 		$php_version = phpversion();
 		if ( version_compare( $php_version, $this->php_version, '>=' ) ) {
-			$this->html_table_row( 'PHP Version', $this->php_version, $php_version, 'success' );
+			$this->html_table_row( 'PHP Version', $this->php_version, '> 5.4', $php_version, 'success' );
 		} else {
-			$this->html_table_row( 'PHP Version', $this->php_version, $php_version, 'error' );
+			$this->html_table_row( 'PHP Version', $this->php_version, '> 5.4', $php_version, 'error' );
 		}
 
 		// Test MYSQL Client extensions/version
 		if ( ! extension_loaded( 'mysql' ) || ! is_callable( 'mysql_connect' ) ) {
-			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Not installed', 'error' );
+			$this->html_table_row( 'PHP MySQL Extension', 'Yes', 'Yes', 'Not installed', 'error' );
 		} else {
-			$this->html_table_row( 'PHP MySQL Extension', 'Required', 'Installed', 'success' );
-			$this->html_table_row( 'PHP MySQL Client Version', $this->mysql_version, mysql_get_client_info(), 'info' );
+			$this->html_table_row( 'PHP MySQL Extension', 'Yes', 'Yes', 'Installed', 'success' );
+			$this->html_table_row( 'PHP MySQL Client Version', $this->mysql_version, '> 5.5', mysql_get_client_info(), 'info' );
 		}
 
 		// Test MySQL Server Version
 		if ( $this->db_link != false && is_callable( 'mysql_get_server_info' ) ) {
 			$mysql_version = preg_replace( '/[^0-9.].*/', '', mysql_get_server_info( $this->db_link ) );
 			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, $mysql_version, 'success' );
+				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'success' );
 			} else {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, $mysql_version, 'error' );
+				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'error' );
 			}
 		} else {
 			// Show MySQL Form
 			$this->html_form_mysql( ( $this->db_infos === false ) ? true : false );
 
-			$this->html_table_row( 'MySQL Version', $this->mysql_version, 'Not available, needs credentials.', 'warning' );
+			$this->html_table_row( 'MySQL Version', $this->mysql_version, '-', 'Not available, needs credentials.', 'warning' );
 		}
 
 		$this->html_table_close();
 	}
 
 	public function test_php_extensions() {
-		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Current' );
+		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended','Current' );
 
-		if ( ! is_callable( 'gd_info' ) ) {
-			$this->html_table_row( 'GD', 'Required', 'Not installed', 'error' );
-		} else {
-			$this->html_table_row( 'GD', 'Required', 'Installed', 'success' );
+		// GD/Imagick lib
+		if ( is_callable( 'gd_info' ) ) {
+			$this->html_table_row( 'Image manipulation (GD)', 'Yes', 'Yes', 'Installed', 'success' );
+		}
+		if ( class_exists('Imagick') ) {
+			$this->html_table_row( 'Image manipulation (Imagick)', 'Yes', 'Yes', 'Installed', 'success' );
+		}
+		if ( ! is_callable( 'gd_info' ) && !class_exists('Imagick') ) {
+			$this->html_table_row( 'Image manipulation (GD, Imagick)', 'Yes', 'Yes', 'Not installed', 'error' );
 		}
 
 		if ( ! class_exists( 'ZipArchive' ) ) {
-			$this->html_table_row( 'ZIP', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'ZIP', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'ZIP', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'ZIP', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'ftp_connect' ) ) {
-			$this->html_table_row( 'FTP', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'FTP', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'FTP', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'FTP', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'exif_read_data' ) ) {
-			$this->html_table_row( 'Exif', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'Exif', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Exif', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'Exif', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'curl_init' ) ) {
-			$this->html_table_row( 'CURL', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Not installed', 'warning' );
 		} else {
-			$this->html_table_row( 'CURL', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( is_callable( 'eaccelerator_put' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'eAccelerator Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'eAccelerator Installed', 'success' );
 		} elseif ( is_callable( 'xcache_set' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'XCache Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'XCache Installed', 'success' );
 		} elseif ( is_callable( 'apc_store' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'APC Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'APC Installed', 'success' );
 		} elseif ( is_callable( 'zend_optimizer_version' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'Zend Optimizer Installed', 'success' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Zend Optimizer Installed', 'success' );
 		} else {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Not installed', 'warning' );
 		}
 
 		if ( ! class_exists( 'Memcache' ) ) {
-			$this->html_table_row( 'Memcache', 'Optional', 'Not installed', 'info' );
+			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Memcache', 'Optional', 'Installed', 'success' );
+			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'mb_substr' ) ) {
-			$this->html_table_row( 'Multibyte String', 'Recommended', 'Not installed', 'error' );
+			$this->html_table_row( 'Multibyte String', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Multibyte String', 'Recommended', 'Installed', 'success' );
+			$this->html_table_row( 'Multibyte String', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! class_exists( 'tidy' ) ) {
-			$this->html_table_row( 'Tidy', 'Optional', 'Not installed', 'info' );
+			$this->html_table_row( 'Tidy', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Tidy', 'Optional', 'Installed', 'success' );
+			$this->html_table_row( 'Tidy', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'finfo_open' ) && ! is_callable( 'mime_content_type' ) ) {
-			$this->html_table_row( 'Mime type', 'Optional', 'Not installed', 'info' );
+			$this->html_table_row( 'Mime type', 'Yes*', 'Yes', 'Not installed', 'warning' );
 		} else {
-			$this->html_table_row( 'Mime type', 'Optional', 'Installed', 'success' );
+			$this->html_table_row( 'Mime type', 'Yes*', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'hash' ) && ! is_callable( 'mhash' ) ) {
-			$this->html_table_row( 'Hash', 'Optional', 'Not installed', 'info' );
+			$this->html_table_row( 'Hash', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
-			$this->html_table_row( 'Hash', 'Optional', 'Installed', 'success' );
+			$this->html_table_row( 'Hash', 'No', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( ! is_callable( 'set_time_limit' ) ) {
-			$this->html_table_row( 'set_time_limit', 'Optional', 'Not Available', 'info' );
+			$this->html_table_row( 'set_time_limit', 'No', 'Yes', 'Not Available', 'info' );
 		} else {
-			$this->html_table_row( 'set_time_limit', 'Optional', 'Available', 'success' );
+			$this->html_table_row( 'set_time_limit', 'No', 'Yes', 'Available', 'success' );
 		}
 
-		$this->html_table_close();
+		$this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
 	}
 
 	public function test_apache_modules() {
@@ -235,24 +240,26 @@ class PHP_WP_Info {
 
 		$current_modules = (array) $this->_get_apache_modules();
 		$modules         = array(
-			'mod_deflate',
-			'mod_env',
-			'mod_expires',
-			'mod_headers',
-			'mod_filter',
-			'mod_mime',
-			'mod_rewrite',
-			'mod_setenvif'
+			'mod_deflate' => false,
+			'mod_env' => false,
+			'mod_expires' => false,
+			'mod_headers' => false,
+			'mod_filter' => false,
+			'mod_mime' => false,
+			'mod_rewrite' => true,
+			'mod_setenvif' => false,
 		);
 
-		$this->html_table_open( 'Apache Modules', '', 'Required', 'Current' );
+		$this->html_table_open( 'Apache Modules', '', 'Required', 'Recommended', 'Current' );
 
-		foreach ( $modules as $module ) {
+		foreach ( $modules as $module => $is_required ) {
+			$is_required = ($is_required == true ) ? 'Yes' : 'No'; // Boolean to Yes/NO
+
 			$name = ucfirst( str_replace( 'mod_', '', $module ) );
 			if ( ! in_array( $module, $current_modules ) ) {
-				$this->html_table_row( $name, 'Recommended', 'Not installed', 'error' );
+				$this->html_table_row( $name, $is_required, 'Recommended', 'Not installed', 'error' );
 			} else {
-				$this->html_table_row( $name, 'Recommended', 'Installed', 'success' );
+				$this->html_table_row( $name, $is_required, 'Recommended', 'Installed', 'success' );
 			}
 		}
 
@@ -262,151 +269,158 @@ class PHP_WP_Info {
 	}
 
 	public function test_php_config() {
-		$this->html_table_open( 'PHP Configuration', '', 'Recommended', 'Current' );
+		$this->html_table_open( 'PHP Configuration', '', 'Required', 'Recommended', 'Current' );
 
 		$value = ini_get( 'register_globals' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'register_globals', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'register_globals', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'register_globals', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'register_globals', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'magic_quotes_runtime' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'magic_quotes_runtime', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'magic_quotes_runtime', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'magic_quotes_runtime', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'magic_quotes_runtime', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'magic_quotes_sybase' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'magic_quotes_sybase', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'magic_quotes_sybase', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'magic_quotes_sybase', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'magic_quotes_sybase', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'register_long_arrays' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'register_long_arrays', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'register_long_arrays', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'register_long_arrays', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'register_long_arrays', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'register_argc_argv ' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'register_argc_argv ', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'register_argc_argv ', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'register_argc_argv ', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'register_argc_argv ', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'memory_limit' );
 		if ( intval( $value ) < 64 ) {
-			$this->html_table_row( 'memory_limit', '64M', $value, 'error' );
+			$this->html_table_row( 'memory_limit', '64M', '256M', $value, 'error' );
 		} else {
-			$this->html_table_row( 'memory_limit', '64M', $value, 'success' );
+			$status = (intval( $value ) >= (8388608 * 32)) ? 'success' : 'warning'; // 256mb
+			$this->html_table_row( 'memory_limit', '64M', '256M', $value, $status );
 		}
 
 		$value = ini_get( 'file_uploads' );
 		if ( strtolower( $value ) == 'on' || $value == '1' ) {
-			$this->html_table_row( 'file_uploads', 'On', 'On', 'success' );
+			$this->html_table_row( 'file_uploads', 'On', 'On', 'On', 'success' );
 		} else {
-			$this->html_table_row( 'file_uploads', 'On', 'Off', 'error' );
+			$this->html_table_row( 'file_uploads', 'On', 'On', 'Off', 'error' );
 		}
 
 		$value = ini_get( 'upload_max_filesize' );
 		if ( intval( $value ) < 32 ) {
-			$this->html_table_row( 'upload_max_filesize', '32M', $value, 'warning' );
+			$this->html_table_row( 'upload_max_filesize', '32M', '128M', $value, 'warning' );
 		} else {
-			$this->html_table_row( 'upload_max_filesize', '32M', $value, 'success' );
+			$status = (intval( $value ) >= (8388608 * 8)) ? 'success' : 'warning'; // 128mb
+			$this->html_table_row( 'upload_max_filesize', '32M', '128M', $value, $status );
 		}
 
 		$value = ini_get( 'post_max_size' );
 		if ( intval( $value ) < 32 ) {
-			$this->html_table_row( 'post_max_size', '32M', $value, 'warning' );
+			$this->html_table_row( 'post_max_size', '32M', '128M', $value, 'warning' );
 		} else {
-			$this->html_table_row( 'post_max_size', '32M', $value, 'success' );
+			$status = (intval( $value ) >= (8388608 * 8)) ? 'success' : 'warning'; // 128mb
+			$this->html_table_row( 'post_max_size', '32M', '128M', $value, $status );
 		}
 
 		$value = ini_get( 'short_open_tag' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'short_open_tag', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'short_open_tag', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'short_open_tag', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'short_open_tag', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'safe_mode' );
 		if ( strtolower( $value ) == 'on' ) {
-			$this->html_table_row( 'safe_mode', 'Off', 'On', 'warning' );
+			$this->html_table_row( 'safe_mode', '-', 'Off', 'On', 'warning' );
 		} else {
-			$this->html_table_row( 'safe_mode', 'Off', 'Off', 'success' );
+			$this->html_table_row( 'safe_mode', '-', 'Off', 'Off', 'success' );
 		}
 
 		$value = ini_get( 'open_basedir' );
-		$this->html_table_row( 'open_basedir', $value, '', 'info', 2 );
+		$this->html_table_row( 'open_basedir', $value, '', '', 'info', 3 );
 
 		$value = ini_get( 'zlib.output_compression' );
-		$this->html_table_row( 'zlib.output_compression', $value, '', 'info', 2 );
+		$this->html_table_row( 'zlib.output_compression', $value, '', '', 'info', 3 );
 
 		$value = ini_get( 'output_handler' );
-		$this->html_table_row( 'output_handler', $value, '', 'info', 2 );
+		$this->html_table_row( 'output_handler', $value, '', '', 'info', 3 );
 
 		$value = ini_get( 'expose_php' );
 		if ( $value == '0' || strtolower( $value ) == 'off' || empty( $value ) ) {
-			$this->html_table_row( 'expose_php', '0 or Off', $value, 'success' );
+			$this->html_table_row( 'expose_php', '-', '0 or Off', $value, 'success' );
 		} else {
-			$this->html_table_row( 'expose_php', '0 or Off', $value, 'error' );
+			$this->html_table_row( 'expose_php', '-', '0 or Off', $value, 'error' );
 		}
 
 		$value = ini_get( 'upload_tmp_dir' );
-		$this->html_table_row( 'upload_tmp_dir', $value, '', 'info', 2 );
+		$this->html_table_row( 'upload_tmp_dir', $value, '', '', 'info', 3 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
-			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'Yes', 'success' );
+			$this->html_table_row( 'upload_tmp_dir writable ?', '-', 'Yes', 'Yes', 'success' );
 		} else {
-			$this->html_table_row( 'upload_tmp_dir writable ?', 'Yes', 'No', 'error' );
+			$this->html_table_row( 'upload_tmp_dir writable ?', '-', 'Yes', 'No', 'error' );
 		}
 
 		$value = '/tmp/';
-		$this->html_table_row( 'System temp dir', $value, '', 'info', 2 );
+		$this->html_table_row( 'System temp dir', $value, '', '', 'info', 3 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
-			$this->html_table_row( 'System temp dir writable ?', 'Yes', 'Yes', 'success' );
+			$this->html_table_row( 'System temp dir writable ?', '-', 'Yes', 'Yes', 'success' );
 		} else {
-			$this->html_table_row( 'System temp dir writable ?', 'Yes', 'No', 'error' );
+			$this->html_table_row( 'System temp dir writable ?', '-', 'Yes', 'No', 'error' );
 		}
 
 		$value = dirname( __FILE__ );
-		$this->html_table_row( 'Current dir', $value, '', 'info', 2 );
+		$this->html_table_row( 'Current dir', $value, '', '', 'info', 3 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
-			$this->html_table_row( 'Current dir writable ?', 'Yes', 'Yes', 'success' );
+			$this->html_table_row( 'Current dir writable ?', 'Yes', 'Yes', 'Yes', 'success' );
 		} else {
-			$this->html_table_row( 'Current dir writable ?', 'Yes', 'No', 'error' );
+			$this->html_table_row( 'Current dir writable ?', 'Yes', 'Yes', 'No', 'error' );
 		}
 
 		if ( is_callable( 'apc_store' ) ) {
 			$value = ini_get( 'apc.shm_size' );
 			if ( intval( $value ) < 32 ) {
-				$this->html_table_row( 'apc.shm_size', '32M', $value, 'warning' );
+				$this->html_table_row( 'apc.shm_size', '32M', '128M', $value, 'error' );
 			} else {
-				$this->html_table_row( 'apc.shm_size', '32M', $value, 'success' );
+				$status = (intval( $value ) >= (8388608 * 16)) ? 'success' : 'warning'; // 128mb
+				$this->html_table_row( 'apc.shm_size', '32M', '128M', $value, $status );
 			}
 		}
 
 		$this->html_table_close();
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function test_mysql_config() {
 		if ( $this->db_link == false ) {
 			return false;
 		}
 
-		$this->html_table_open( 'MySQL Configuration', '', 'Recommended', 'Current' );
+		$this->html_table_open( 'MySQL Configuration', '', 'Required', 'Recommended', 'Current' );
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
 		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' ) {
-					$this->html_table_row( "Query cache", 'Yes', 'Yes', 'success' );
+					$this->html_table_row( "Query cache", 'Yes*', 'Yes', 'Yes', 'success' );
 				} else {
-					$this->html_table_row( "Query cache", 'Yes', 'False', 'error' );
+					$this->html_table_row( "Query cache", 'Yes*', 'Yes', 'False', 'error' );
 				}
 			}
 		}
@@ -414,10 +428,11 @@ class PHP_WP_Info {
 		$result = mysql_query( "SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
 		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
-				if ( intval( $row['Value'] ) >= 8388608 ) {
-					$this->html_table_row( "Query cache size", '8M', $this->_format_bytes( (int) $row['Value'] ), 'success' );
+				if ( intval( $row['Value'] ) >= 8388608 ) { // 8mb
+					$status = (intval( $row['Value'] ) >= (8388608 * 8)) ? 'success' : 'warning'; // 64mb
+					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), $status );
 				} else {
-					$this->html_table_row( "Query cache size", '8M', $this->_format_bytes( (int) $row['Value'] ), 'error' );
+					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), 'error' );
 				}
 			}
 		}
@@ -426,9 +441,9 @@ class PHP_WP_Info {
 		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'on' || strtolower( $row['Value'] ) == '1' ) {
-					$this->html_table_row( "Query cache type", '1 or on', strtolower( $row['Value'] ), 'success' );
+					$this->html_table_row( "Query cache type", '1 or on', '1 or on', strtolower( $row['Value'] ), 'success' );
 				} else {
-					$this->html_table_row( "Query cache type", '1', strtolower( $row['Value'] ), 'error' );
+					$this->html_table_row( "Query cache type", '1', '1', strtolower( $row['Value'] ), 'error' );
 				}
 			}
 		}
@@ -437,25 +452,27 @@ class PHP_WP_Info {
 		if ( $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
-					$this->html_table_row( "Log slow queries", 'Yes', 'Yes', 'success' );
+					$is_log_slow_queries = true;
+					$this->html_table_row( "Log slow queries", 'No', 'Yes', 'Yes', 'success' );
 				} else {
-					$this->html_table_row( "Log slow queries", 'Yes', 'False', 'error' );
+					$is_log_slow_queries = false;
+					$this->html_table_row( "Log slow queries", 'No', 'Yes', 'False', 'error' );
 				}
 			}
 		}
 
 		$result = mysql_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
-		if ( $result != false ) {
+		if ( $is_log_slow_queries == true && $result != false ) {
 			while ( $row = mysql_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) <= 2 ) {
-					$this->html_table_row( "Long query time", '2', ( (int) $row['Value'] ), 'success' );
+					$this->html_table_row( "Long query time (sec)", '2', '1', ( (int) $row['Value'] ), 'success' );
 				} else {
-					$this->html_table_row( "Long query time", '2', ( (int) $row['Value'] ), 'error' );
+					$this->html_table_row( "Long query time (sec)", '2', '1', ( (int) $row['Value'] ), 'error' );
 				}
 			}
 		}
 
-		$this->html_table_close();
+		$this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
 
 		return true;
 	}
@@ -481,7 +498,7 @@ class PHP_WP_Info {
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHP WordPress Info</title>' . "\n";
 		$output .= '<link href="//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
-		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;}</style>' . "\n";
+		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px}</style>' . "\n";
 		$output .= '<!--[if lt IE 9]> <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
 		$output .= '</head>' . "\n";
 		$output .= '<body style="padding:10px 0;">' . "\n";
@@ -564,18 +581,25 @@ class PHP_WP_Info {
 	 * @param string $col1
 	 * @param string $col2
 	 * @param string $col3
+	 * @param string $col4
 	 */
-	public function html_table_open( $title = '', $col1 = '', $col2 = '', $col3 = '' ) {
+	public function html_table_open( $title = '', $col1 = '', $col2 = '', $col3 = '', $col4 = '' ) {
 		$output = '';
 		$output .= '<table class="table table-bordered">' . "\n";
 		$output .= '<caption>' . $title . '</caption>' . "\n";
 		$output .= '<thead>' . "\n";
 
-		if ( ! empty( $col1 ) || ! empty( $col2 ) || ! empty( $col3 ) ) {
+		if ( ! empty( $col1 ) || ! empty( $col2 ) || ! empty( $col3 ) || ! empty( $col4 ) ) {
 			$output .= '<tr>' . "\n";
 			$output .= '<th width="40%">' . $col1 . '</th>' . "\n";
-			$output .= '<th width="30%">' . $col2 . '</th>' . "\n";
-			$output .= '<th width="30%">' . $col3 . '</th>' . "\n";
+			if ( !empty($col4) ) {
+				$output .= '<th width="20%">' . $col2 . '</th>' . "\n";
+				$output .= '<th width="20%">' . $col3 . '</th>' . "\n";
+				$output .= '<th width="20%">' . $col4 . '</th>' . "\n";
+			} else {
+				$output .= '<th width="30%">' . $col2 . '</th>' . "\n";
+				$output .= '<th width="30%">' . $col3 . '</th>' . "\n";
+			}
 			$output .= '</tr>' . "\n";
 		}
 
@@ -587,11 +611,17 @@ class PHP_WP_Info {
 
 	/**
 	 * Close HTML table
+	 *
+	 * @param string $description
 	 */
-	public function html_table_close() {
+	public function html_table_close( $description = '' ) {
 		$output = '';
 		$output .= '</tbody>' . "\n";
 		$output .= '</table>' . "\n";
+
+		if ( !empty($description) ) {
+			$output .= '<p class="description">'.$description.'</p>' . "\n";
+		}
 
 		echo $output;
 	}
@@ -606,17 +636,18 @@ class PHP_WP_Info {
 	 * @param string $status
 	 * @param bool $colspan
 	 */
-	public function html_table_row( $col1 = '', $col2 = '', $col3 = '', $status = 'success', $colspan = false ) {
+	public function html_table_row( $col1, $col2, $col3, $col4, $status = 'success', $colspan = false ) {
 		$output = '';
 		$output .= '<tr class="' . $status . '">' . "\n";
 
-		if ( $colspan == 2 ) {
+		if ( $colspan !== false ) {
 			$output .= '<td>' . $col1 . '</td>' . "\n";
-			$output .= '<td colspan="' . $colspan . '">' . $col2 . '</td>' . "\n";
+			$output .= '<td colspan="' . $colspan . '" style="text-align:center;">' . $col2 . '</td>' . "\n";
 		} else {
 			$output .= '<td>' . $col1 . '</td>' . "\n";
 			$output .= '<td>' . $col2 . '</td>' . "\n";
 			$output .= '<td>' . $col3 . '</td>' . "\n";
+			$output .= '<td>' . $col4 . '</td>' . "\n";
 		}
 
 		$output .= '</tr>' . "\n";
@@ -634,7 +665,7 @@ class PHP_WP_Info {
 	public function html_form_mysql( $show_error_credentials = false ) {
 		$output = '';
 		$output .= '<tr>' . "\n";
-		$output .= '<td colspan="3">' . "\n";
+		$output .= '<td colspan="4">' . "\n";
 
 		if ( $show_error_credentials == true ) {
 			$output .= '<div class="alert alert-error">Credentials invalid.</div>' . "\n";
