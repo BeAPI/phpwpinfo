@@ -31,3 +31,11 @@ Finally, it allows (if you server allows it) to quickly install :
 This script is writted in full PHP and use Bootstrap for HTML/CSS/JS provided by CDN (http://www.bootstrapcdn.com/)
 
 License: GPL v2
+
+### Changelog:
+
+* Version 1.1
+    * Implement recommended/required for each config/module
+    * Improve test config value
+* Version 1.0
+    * Initial release
