@@ -469,7 +469,7 @@ class PHP_WP_Info {
 		$output .= '<meta charset="utf-8">' . "\n";
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHP WordPress Info</title>' . "\n";
-		$output .= '<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.0/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
+		$output .= '<link href="//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;}</style>' . "\n";
 		$output .= '<!--[if lt IE 9]> <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
 		$output .= '</head>' . "\n";
@@ -536,10 +536,10 @@ class PHP_WP_Info {
 	public function get_footer( ) {
 		$output = '';
 
-		$output .= '<footer>&copy; <a href="http://beapi.fr">BeAPI</a> '.date('Y').'</footer>' . "\n";
+		$output .= '<footer>&copy; <a href="http://beapi.fr">BE API</a> '.date('Y').'</footer>' . "\n";
 		$output .= '</div>' . "\n";
-		$output .= '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>' . "\n";
-		$output .= '<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.0/js/bootstrap.min.js"></script>' . "\n";
+		$output .= '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>' . "\n";
+		$output .= '<script src="//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
 		$output .= '</body>' . "\n";
 		$output .= '</html>' . "\n";
 
