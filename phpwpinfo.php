@@ -548,6 +548,11 @@ class PHP_WP_Info {
 
 	/**
 	 * Open a HTML table
+	 *
+	 * @param string $title
+	 * @param string $col1
+	 * @param string $col2
+	 * @param string $col3
 	 */
 	public function html_table_open( $title = '', $col1 = '', $col2 = '', $col3 = '' ) {
 		$output = '';
@@ -583,6 +588,12 @@ class PHP_WP_Info {
 	/**
 	 * Add table row
 	 * Status available : success, error, warning, info
+	 *
+	 * @param string $col1
+	 * @param string $col2
+	 * @param string $col3
+	 * @param string $status
+	 * @param bool $colspan
 	 */
 	public function html_table_row( $col1 = '', $col2 = '', $col3 = '', $status = 'success', $colspan = false ) {
 		$output = '';
@@ -654,7 +665,7 @@ class PHP_WP_Info {
 		}
 
 		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
-		$output .= '<i class="icon-envelope"></i> <input type="mail" class="input-large" name="mail" placeholder="test@sample.com" value="">' . "\n";
+		$output .= '<i class="icon-envelope"></i> <input type="email" class="input-large" name="mail" placeholder="test@sample.com" value="">' . "\n";
 		$output .= '<button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
 		$output .= '<span class="help-inline">Send a test email to check that server is doing its job</span>' . "\n";
 		$output .= '</form>' . "\n";
@@ -666,8 +677,10 @@ class PHP_WP_Info {
 
 	/**
 	 * Stripslashes array
+	 *
 	 * @param  [type] $value [description]
-	 * @return [type]        [description]
+	 *
+	 * @return array|string [type]        [description]
 	 */
 	public function stripslashes_deep( $value ) {
 		return is_array( $value ) ? array_map( array( &$this, 'stripslashes_deep' ), $value ) : stripslashes( $value );
@@ -734,8 +747,11 @@ class PHP_WP_Info {
 
 	/**
 	 * Get humans values, take from http://php.net/manual/de/function.filesize.php
-	 * @param  integer  $bytes     [description]
-	 * @return string          	   [description]
+	 *
+	 * @param $size
+	 *
+	 * @return string [description]
+	 * @internal param int $bytes [description]
 	 */
 	private function _format_bytes( $size ) {
 		$units = array( ' B', ' KB', ' MB', ' GB', ' TB' );
