@@ -1,6 +1,6 @@
 <?php
 /*
-Version 1.1
+Version 1.2
 Copyright 2012-2015 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,7 @@ function phpwpinfo() {
 class PHP_WP_Info {
 	private $debug_mode = true;
 	private $php_version = '5.2.4';
-	private $mysql_version = '5.0';
+	private $mysqli_version = '5.0';
 
 	private $db_infos = array();
 	private $db_link = null;
@@ -87,7 +87,7 @@ class PHP_WP_Info {
 		$this->test_versions();
 		$this->test_php_config();
 		$this->test_php_extensions();
-		$this->test_mysql_config();
+		$this->test_mysqli_config();
 		$this->test_apache_modules();
 		$this->test_form_mail();
 
@@ -120,26 +120,26 @@ class PHP_WP_Info {
 		}
 
 		// Test MYSQL Client extensions/version
-		if ( ! extension_loaded( 'mysql' ) || ! is_callable( 'mysql_connect' ) ) {
-			$this->html_table_row( 'PHP MySQL Extension', 'Yes', 'Yes', 'Not installed', 'error' );
+		if ( ! extension_loaded( 'mysqli' ) || ! is_callable( 'mysqli_connect' ) ) {
+			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Not installed', 'error' );
 		} else {
-			$this->html_table_row( 'PHP MySQL Extension', 'Yes', 'Yes', 'Installed', 'success' );
-			$this->html_table_row( 'PHP MySQL Client Version', $this->mysql_version, '> 5.5', mysql_get_client_info(), 'info' );
+			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Installed', 'success' );
+			$this->html_table_row( 'PHP MySQLi Client Version', $this->mysqli_version, '> 5.5', mysqli_get_client_info(), 'info' );
 		}
 
 		// Test MySQL Server Version
-		if ( $this->db_link != false && is_callable( 'mysql_get_server_info' ) ) {
-			$mysql_version = preg_replace( '/[^0-9.].*/', '', mysql_get_server_info( $this->db_link ) );
-			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'success' );
+		if ( $this->db_link != false && is_callable( 'mysqli_get_server_info' ) ) {
+			$mysqli_version = preg_replace( '/[^0-9.].*/', '', mysqli_get_server_info( $this->db_link ) );
+			if ( version_compare( $mysqli_version, $this->mysqli_version, '>=' ) ) {
+				$this->html_table_row( 'MySQL Version', $this->mysqli_version, '> 5.5', $mysqli_version, 'success' );
 			} else {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'error' );
+				$this->html_table_row( 'MySQL Version', $this->mysqli_version, '> 5.5', $mysqli_version, 'error' );
 			}
 		} else {
 			// Show MySQL Form
 			$this->html_form_mysql( ( $this->db_infos === false ) ? true : false );
 
-			$this->html_table_row( 'MySQL Version', $this->mysql_version, '-', 'Not available, needs credentials.', 'warning' );
+			$this->html_table_row( 'MySQL Version', $this->mysqli_version, '-', 'Not available, needs credentials.', 'warning' );
 		}
 
 		$this->html_table_close();
@@ -410,16 +410,16 @@ class PHP_WP_Info {
 	/**
 	 * @return bool
 	 */
-	public function test_mysql_config() {
+	public function test_mysqli_config() {
 		if ( $this->db_link == false ) {
 			return false;
 		}
 
 		$this->html_table_open( 'MySQL Configuration', '', 'Required', 'Recommended', 'Current' );
 
-		$result = mysql_query( "SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
+		$result = mysqli_query( "SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
 		if ( $result != false ) {
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' ) {
 					$this->html_table_row( "Query cache", 'Yes*', 'Yes', 'Yes', 'success' );
 				} else {
@@ -428,9 +428,9 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysql_query( "SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
+		$result = mysqli_query( "SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
 		if ( $result != false ) {
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) >= 8388608 ) { // 8mb
 					$status = (intval( $row['Value'] ) >= (8388608 * 8)) ? 'success' : 'warning'; // 64mb
 					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), $status );
@@ -440,9 +440,9 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysql_query( "SHOW VARIABLES LIKE 'query_cache_type'", $this->db_link );
+		$result = mysqli_query( "SHOW VARIABLES LIKE 'query_cache_type'", $this->db_link );
 		if ( $result != false ) {
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'on' || strtolower( $row['Value'] ) == '1' ) {
 					$this->html_table_row( "Query cache type", '1 or on', '1 or on', strtolower( $row['Value'] ), 'success' );
 				} else {
@@ -451,9 +451,9 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysql_query( "SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
+		$result = mysqli_query( "SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
 		if ( $result != false ) {
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
 					$is_log_slow_queries = true;
 					$this->html_table_row( "Log slow queries", 'No', 'Yes', 'Yes', 'success' );
@@ -464,9 +464,9 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysql_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
+		$result = mysqli_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
 		if ( $is_log_slow_queries == true && $result != false ) {
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) <= 2 ) {
 					$this->html_table_row( "Long query time (sec)", '2', '1', ( (int) $row['Value'] ), 'success' );
 				} else {
@@ -914,8 +914,8 @@ class PHP_WP_Info {
 		}
 
 		// Check credentials
-		if ( ! empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysql_connect' ) ) {
-			$this->db_link = mysql_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
+		if ( ! empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysqli_connect' ) ) {
+			$this->db_link = mysqli_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
 			if ( $this->db_link == false ) {
 				unset( $_SESSION['credentials'] );
 				$this->db_infos = false;
@@ -924,19 +924,19 @@ class PHP_WP_Info {
 
 		// Check GET for MYSQL variables
 		if ( $this->db_link != false && isset( $_GET ) && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] == 'true' ) {
-			$result = mysql_query( 'SHOW VARIABLES' );
+			$result = mysqli_query( 'SHOW VARIABLES' );
 			if ( ! $result ) {
-				echo "Could not successfully run query ( 'SHOW VARIABLES' ) from DB: " . mysql_error();
+				echo "Could not successfully run query ( 'SHOW VARIABLES' ) from DB: " . mysqli_error();
 				exit();
 			}
 
-			if ( mysql_num_rows( $result ) == 0 ) {
+			if ( mysqli_num_rows( $result ) == 0 ) {
 				echo "No rows found, nothing to print so am exiting";
 				exit();
 			}
 
 			$output = array();
-			while ( $row = mysql_fetch_assoc( $result ) ) {
+			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				$output[ $row['Variable_name'] ] = $row['Value'];
 			}
 			$this->get_header();
