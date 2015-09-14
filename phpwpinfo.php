@@ -182,17 +182,19 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Installed', 'success' );
 		}
-
-		if ( is_callable( 'eaccelerator_put' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'eAccelerator Installed', 'success' );
+		
+		if ( is_callable( 'opcache_reset' ) ) {
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Zend OPcache Installed', 'success' );
+		} elseif ( is_callable( 'eaccelerator_put' ) ) {
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'eAccelerator Installed', 'success' );
 		} elseif ( is_callable( 'xcache_set' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'XCache Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'XCache Installed', 'success' );
 		} elseif ( is_callable( 'apc_store' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'APC Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'APC Installed', 'success' );
 		} elseif ( is_callable( 'zend_optimizer_version' ) ) {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Zend Optimizer Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizerr)', 'No', 'Yes', 'Zend Optimizer Installed', 'success' );
 		} else {
-			$this->html_table_row( 'Opcode (APC or Xcache or eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Not installed', 'warning' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Not installed', 'warning' );
 		}
 
 		if ( ! class_exists( 'Memcache' ) ) {
