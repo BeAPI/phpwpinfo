@@ -316,6 +316,14 @@ class PHP_WP_Info {
 			$status = (intval( $value ) >= (8388608 * 32)) ? 'success' : 'warning'; // 256mb
 			$this->html_table_row( 'memory_limit', '64M', '256M', $value, $status );
 		}
+		
+		$value = ini_get( 'max_input_vars' );
+		if ( intval( $value ) < 1000 ) {
+			$this->html_table_row( 'max_input_vars', '1000', '5000', $value, 'error' );
+		} else {
+			$status = (intval( $value ) >= 5000) ? 'success' : 'warning';
+			$this->html_table_row( 'max_input_vars', '1000', '5000', $value, $status );
+		}
 
 		$value = ini_get( 'file_uploads' );
 		if ( strtolower( $value ) == 'on' || $value == '1' ) {
