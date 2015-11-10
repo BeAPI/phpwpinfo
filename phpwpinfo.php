@@ -459,6 +459,7 @@ class PHP_WP_Info {
 			}
 		}
 
+		$is_log_slow_queries = false;
 		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'log_slow_queries'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
