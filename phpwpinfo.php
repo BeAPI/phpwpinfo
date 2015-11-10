@@ -425,7 +425,7 @@ class PHP_WP_Info {
 
 		$this->html_table_open( 'MySQL Configuration', '', 'Required', 'Recommended', 'Current' );
 
-		$result = mysqli_query( "SHOW VARIABLES LIKE 'have_query_cache'", $this->db_link );
+		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'have_query_cache'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' ) {
@@ -436,7 +436,7 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysqli_query( "SHOW VARIABLES LIKE 'query_cache_size'", $this->db_link );
+		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_size'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) >= 8388608 ) { // 8mb
@@ -448,7 +448,7 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysqli_query( "SHOW VARIABLES LIKE 'query_cache_type'", $this->db_link );
+		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_type'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'on' || strtolower( $row['Value'] ) == '1' ) {
@@ -459,7 +459,7 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysqli_query( "SHOW VARIABLES LIKE 'log_slow_queries'", $this->db_link );
+		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'log_slow_queries'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
@@ -472,7 +472,7 @@ class PHP_WP_Info {
 			}
 		}
 
-		$result = mysqli_query( "SHOW VARIABLES LIKE 'long_query_time'", $this->db_link );
+		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'long_query_time'" );
 		if ( $is_log_slow_queries == true && $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( intval( $row['Value'] ) <= 2 ) {
