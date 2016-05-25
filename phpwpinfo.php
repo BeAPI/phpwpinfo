@@ -1,7 +1,7 @@
 <?php
 /*
-Version 1.2
-Copyright 2012-2015 - Amaury Balmer (amaury@beapi.fr)
+Version 1.3
+Copyright 2012-2016 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as 
@@ -309,12 +309,12 @@ class PHP_WP_Info {
 			$this->html_table_row( 'register_argc_argv ', '-', 'Off', 'Off', 'success' );
 		}
 
-		$value = ini_get( 'memory_limit' );
-		if ( intval( $value ) < 64 ) {
-			$this->html_table_row( 'memory_limit', '64M', '256M', $value, 'error' );
+		$value = $this->return_bytes( ini_get( 'memory_limit' ) );
+		if ( intval( $value ) < $this->return_bytes('64M') ) {
+			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes($value), 'error' );
 		} else {
-			$status = (intval( $value ) >= (8388608 * 32)) ? 'success' : 'warning'; // 256mb
-			$this->html_table_row( 'memory_limit', '64M', '256M', $value, $status );
+			$status = (intval( $value ) >= $this->return_bytes('256M')) ? 'success' : 'warning';
+			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes($value), $status );
 		}
 		
 		$value = ini_get( 'max_input_vars' );
@@ -332,20 +332,20 @@ class PHP_WP_Info {
 			$this->html_table_row( 'file_uploads', 'On', 'On', 'Off', 'error' );
 		}
 
-		$value = ini_get( 'upload_max_filesize' );
-		if ( intval( $value ) < 32 ) {
-			$this->html_table_row( 'upload_max_filesize', '32M', '128M', $value, 'warning' );
+		$value = $this->return_bytes( ini_get( 'upload_max_filesize' ) );
+		if ( intval( $value ) < $this->return_bytes('32M') ) {
+			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes($value), 'error' );
 		} else {
-			$status = (intval( $value ) >= (8388608 * 8)) ? 'success' : 'warning'; // 128mb
-			$this->html_table_row( 'upload_max_filesize', '32M', '128M', $value, $status );
+			$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
+			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes($value), $status );
 		}
 
-		$value = ini_get( 'post_max_size' );
-		if ( intval( $value ) < 32 ) {
-			$this->html_table_row( 'post_max_size', '32M', '128M', $value, 'warning' );
+		$value = $this->return_bytes( ini_get( 'post_max_size' ) );
+		if ( intval( $value ) < $this->return_bytes('32M') ) {
+			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes($value), 'warning' );
 		} else {
-			$status = (intval( $value ) >= (8388608 * 8)) ? 'success' : 'warning'; // 128mb
-			$this->html_table_row( 'post_max_size', '32M', '128M', $value, $status );
+			$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
+			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes($value), $status );
 		}
 
 		$value = ini_get( 'short_open_tag' );
@@ -403,16 +403,37 @@ class PHP_WP_Info {
 		}
 
 		if ( is_callable( 'apc_store' ) ) {
-			$value = ini_get( 'apc.shm_size' );
-			if ( intval( $value ) < 32 ) {
-				$this->html_table_row( 'apc.shm_size', '32M', '128M', $value, 'error' );
+			$value = $this->return_bytes( ini_get( 'apc.shm_size' ) );
+			if ( intval( $value ) < $this->return_bytes('32M') ) {
+				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes($value), 'error' );
 			} else {
-				$status = (intval( $value ) >= (8388608 * 16)) ? 'success' : 'warning'; // 128mb
-				$this->html_table_row( 'apc.shm_size', '32M', '128M', $value, $status );
+				$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
+				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes($value), $status );
 			}
 		}
 
 		$this->html_table_close();
+	}
+
+	/**
+	 * Convert PHP variable (G/M/K) to bytes
+	 * Source: http://php.net/manual/fr/function.ini-get.php
+	 * 
+	 */
+	public function return_bytes($val) {
+	    $val = trim($val);
+	    $last = strtolower($val[strlen($val)-1]);
+	    switch($last) {
+	        // Le modifieur 'G' est disponible depuis PHP 5.1.0
+	        case 'g':
+	            $val *= 1024;
+	        case 'm':
+	            $val *= 1024;
+	        case 'k':
+	            $val *= 1024;
+	    }
+
+	    return $val;
 	}
 
 	/**
@@ -439,8 +460,8 @@ class PHP_WP_Info {
 		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_size'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
-				if ( intval( $row['Value'] ) >= 8388608 ) { // 8mb
-					$status = (intval( $row['Value'] ) >= (8388608 * 8)) ? 'success' : 'warning'; // 64mb
+				if ( intval( $row['Value'] ) >= $this->return_bytes('8M') ) {
+					$status = (intval( $row['Value'] ) >= $this->return_bytes('64M')) ? 'success' : 'warning';
 					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), $status );
 				} else {
 					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), 'error' );
