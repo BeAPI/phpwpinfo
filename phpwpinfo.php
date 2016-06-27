@@ -38,6 +38,31 @@ function phpwpinfo() {
 	$info->init_all_tests();
 }
 
+function command_exists ($command) {
+	  $whereIsCommand = (PHP_OS == 'WINNT') ? 'where' : 'which';
+
+	  $process = proc_open(
+	    "$whereIsCommand $command",
+	    array(
+	      0 => array("pipe", "r"), //STDIN
+	      1 => array("pipe", "w"), //STDOUT
+	      2 => array("pipe", "w"), //STDERR
+	    ),
+	    $pipes
+	  );
+	  if ($process !== false) {
+	    $stdout = stream_get_contents($pipes[1]);
+	    $stderr = stream_get_contents($pipes[2]);
+	    fclose($pipes[1]);
+	    fclose($pipes[2]);
+	    proc_close($process);
+
+	    return $stdout != '';
+	  }
+
+	  return false;
+	}
+
 /**
  * TODO: Use or not session for save DB configuration
  */
@@ -92,10 +117,10 @@ class PHP_WP_Info {
 		$this->test_form_mail();
 
 		$this->get_footer();
-	}
+	}	
 
 	/**
-	 * Main test, check if php/mysql are installed and right version for WP
+	 * Main test, check if php/mysql/git are installed and right version for WP
 	 */
 	public function test_versions() {
 		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Recommended', 'Current' );
@@ -140,6 +165,13 @@ class PHP_WP_Info {
 			$this->html_form_mysql( ( $this->db_infos === false ) ? true : false );
 
 			$this->html_table_row( 'MySQL Version', $this->mysqli_version, '-', 'Not available, needs credentials.', 'warning' );
+		}
+
+		//Test if the command 'git' exists, so it tests if Git is installed
+		if(command_exists('git') == 1){
+			$this->html_table_row('Presence of Git', 'No', 'Yes', 'Yes');
+		}else{
+			$this->html_table_row('Presence of Git', 'No', 'Yes', 'No', 'error');
 		}
 
 		$this->html_table_close();
