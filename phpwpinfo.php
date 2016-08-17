@@ -202,6 +202,12 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Installed', 'success' );
 		}
+		
+		if ( ! class_exists( 'Memcached' ) ) {
+			$this->html_table_row( 'Memcached', 'No', 'Yes', 'Not installed', 'info' );
+		} else {
+			$this->html_table_row( 'Memcached', 'No', 'Yes', 'Installed', 'success' );
+		}
 
 		if ( ! is_callable( 'mb_substr' ) ) {
 			$this->html_table_row( 'Multibyte String', 'No', 'Yes', 'Not installed', 'info' );
