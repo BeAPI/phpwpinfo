@@ -536,9 +536,9 @@ class PHP_WP_Info {
 		$output .= '<meta charset="utf-8">' . "\n";
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHP WordPress Info</title>' . "\n";
-		$output .= '<link href="//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
+		$output .= '<link href="https//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px}</style>' . "\n";
-		$output .= '<!--[if lt IE 9]> <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
+		$output .= '<!--[if lt IE 9]> <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
 		$output .= '</head>' . "\n";
 		$output .= '<body style="padding:10px 0;">' . "\n";
 		$output .= '<div class="container">' . "\n";
@@ -546,7 +546,7 @@ class PHP_WP_Info {
 		$output .= '<div class="navbar-inner">' . "\n";
 		$output .= '<a class="brand" href="#">PHP WordPress Info</a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
-		$output .= '<li><a href="https://github.com/herewithme/phpwpinfo">Project on Github</a></li>' . "\n";
+		$output .= '<li><a href="https://github.com/BeAPI/phpwpinfo">Project on Github</a></li>' . "\n";
 
 		if ( $this->db_link != false ) {
 			$output .= '<li class="dropdown">' . "\n";
@@ -605,8 +605,8 @@ class PHP_WP_Info {
 
 		$output .= '<footer>&copy; <a href="http://beapi.fr">BE API</a> ' . date( 'Y' ) . '</footer>' . "\n";
 		$output .= '</div>' . "\n";
-		$output .= '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>' . "\n";
-		$output .= '<script src="//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
+		$output .= '<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>' . "\n";
+		$output .= '<script src="https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
 		$output .= '</body>' . "\n";
 		$output .= '</html>' . "\n";
 
@@ -985,7 +985,7 @@ class PHP_WP_Info {
 	private function _check_request_adminer() {
 		// Check GET for Install Adminer
 		if ( isset( $_GET ) && isset( $_GET['adminer'] ) && $_GET['adminer'] == 'install' ) {
-			$code = $this->file_get_contents_url( 'http://www.adminer.org/latest-mysql-en.php' );
+			$code = $this->file_get_contents_url( 'https://www.adminer.org/latest-mysql-en.php' );
 			if ( ! empty( $code ) ) {
 				$result = file_put_contents( dirname( __FILE__ ) . '/adminer.php', $code );
 				if ( $result != false ) {
@@ -1066,7 +1066,7 @@ class PHP_WP_Info {
 		// Check GET for Install wordpress
 		if ( isset( $_GET ) && isset( $_GET['wordpress'] ) && $_GET['wordpress'] == 'install' ) {
 			if ( ! is_file( dirname( __FILE__ ) . '/latest.zip' ) ) {
-				$code = $this->file_get_contents_url( 'http://wordpress.org/latest.zip' );
+				$code = $this->file_get_contents_url( 'https://wordpress.org/latest.zip' );
 				if ( ! empty( $code ) ) {
 					$result = file_put_contents( dirname( __FILE__ ) . '/latest.zip', $code );
 					if ( $result == false ) {
