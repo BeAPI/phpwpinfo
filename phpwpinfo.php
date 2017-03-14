@@ -119,7 +119,7 @@ class PHP_WP_Info {
 			$this->html_table_row( 'PHP Version', $this->php_version, '> 5.4', $php_version, 'error' );
 		}
 
-		// Test MYSQL Client extensions/version
+		// Test MYSQL Client extensions/version.
 		if ( ! extension_loaded( 'mysqli' ) || ! is_callable( 'mysqli_connect' ) ) {
 			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Not installed', 'error' );
 		} else {
@@ -148,14 +148,22 @@ class PHP_WP_Info {
 	public function test_php_extensions() {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended','Current' );
 
-		// GD/Imagick lib
-		if ( is_callable( 'gd_info' ) ) {
+		/**
+		 * Check GD and Imagick like WordPress does.
+		 */
+		$gd = extension_loaded( 'gd' ) && function_exists( 'gd_info' );
+		$imagick = extension_loaded( 'imagick' ) &&  class_exists( 'Imagick', false ) &&  class_exists( 'ImagickPixel', false ) && version_compare( phpversion( 'imagick' ), '2.2.0', '>=' );
+
+		// GD/Imagick lib.
+		if ( $gd ) {
 			$this->html_table_row( 'Image manipulation (GD)', 'Yes', 'Yes', 'Installed', 'success' );
 		}
-		if ( class_exists('Imagick') ) {
+
+		if ( $imagick ) {
 			$this->html_table_row( 'Image manipulation (Imagick)', 'Yes', 'Yes', 'Installed', 'success' );
 		}
-		if ( ! is_callable( 'gd_info' ) && !class_exists('Imagick') ) {
+
+		if ( ! $gd && ! $imagick ) {
 			$this->html_table_row( 'Image manipulation (GD, Imagick)', 'Yes', 'Yes', 'Not installed', 'error' );
 		}
 
@@ -536,7 +544,7 @@ class PHP_WP_Info {
 		$output .= '<meta charset="utf-8">' . "\n";
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHP WordPress Info</title>' . "\n";
-		$output .= '<link href="https//maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
+		$output .= '<link href="https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">' . "\n";
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px}</style>' . "\n";
 		$output .= '<!--[if lt IE 9]> <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script> <![endif]-->' . "\n";
 		$output .= '</head>' . "\n";
