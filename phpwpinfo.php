@@ -142,13 +142,20 @@ class PHP_WP_Info {
 			$this->html_table_row( 'MySQL Version', $this->mysqli_version, '-', 'Not available, needs credentials.', 'warning' );
 		}
 
-		//Test if the server is connected to the server by attempt to find the IP(v4) of www.google.fr
-		if(gethostbyname('www.google.fr') != 'www.google.fr'){
-			$this->html_table_row('Internet connection', 'No', 'Yes', 'Yes', 'success');
-		}else{
-			$this->html_table_row('Internet connection', 'No', 'Yes', 'No', 'error');
+		// Test if the server is connected to the server by attempt to find the IP(v4) of www.google.fr
+		if( gethostbyname('www.google.fr') != 'www.google.fr' ) {
+			$this->html_table_row('Internet connectivity (Google)', 'No', 'Yes', 'Yes', 'success');
+		} else {
+			$this->html_table_row('Internet connectivity (Google)', 'No', 'Yes', 'No', 'error');
 		}
 
+		// Test if the command 'git' exists, so it tests if Git is installed
+		if ($this->_command_exists('git') == 1 ) {
+			$this->html_table_row('GIT is installed?', 'No', 'Yes', 'Yes');
+		} else {
+			$this->html_table_row('GIT is installed?', 'No', 'Yes', 'No', 'error');
+		}
+	}
 		
 	public function test_php_extensions() {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended','Current' );
@@ -1103,6 +1110,39 @@ class PHP_WP_Info {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Determines if a command exists on the current environment
+	 * Source: https://stackoverflow.com/questions/12424787/how-to-check-if-a-shell-command-exists-from-php
+	 *
+	 * @param string $command The command to check
+	 * @return bool True if the command has been found ; otherwise, false.
+	 */
+	private function _command_exists($command) {
+		$whereIsCommand = (PHP_OS == 'WINNT') ? 'where' : 'which';
+
+		$process = proc_open(
+			"$whereIsCommand $command",
+			array(
+				0 => array("pipe", "r"), //STDIN
+				1 => array("pipe", "w"), //STDOUT
+				2 => array("pipe", "w"), //STDERR
+			),
+			$pipes
+		);
+
+		if ($process !== false) {
+			$stdout = stream_get_contents($pipes[1]);
+			$stderr = stream_get_contents($pipes[2]);
+			fclose($pipes[1]);
+			fclose($pipes[2]);
+			proc_close($process);
+
+			return $stdout != '';
+		}
+
+		return false;
 	}
 }
 
