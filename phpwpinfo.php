@@ -92,10 +92,10 @@ class PHP_WP_Info {
 		$this->test_form_mail();
 
 		$this->get_footer();
-	}
+	}	
 
 	/**
-	 * Main test, check if php/mysql are installed and right version for WP
+	 * Main test, check if php/mysql/git are installed and right version for WP
 	 */
 	public function test_versions() {
 		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Recommended', 'Current' );
@@ -142,9 +142,14 @@ class PHP_WP_Info {
 			$this->html_table_row( 'MySQL Version', $this->mysqli_version, '-', 'Not available, needs credentials.', 'warning' );
 		}
 
-		$this->html_table_close();
-	}
+		//Test if the server is connected to the server by attempt to find the IP(v4) of www.google.fr
+		if(gethostbyname('www.google.fr') != 'www.google.fr'){
+			$this->html_table_row('Internet connection', 'No', 'Yes', 'Yes', 'success');
+		}else{
+			$this->html_table_row('Internet connection', 'No', 'Yes', 'No', 'error');
+		}
 
+		
 	public function test_php_extensions() {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended','Current' );
 
