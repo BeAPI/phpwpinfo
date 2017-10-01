@@ -155,6 +155,22 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row('GIT is installed?', 'No', 'Yes', 'No', 'error');
 		}
+
+		$this->html_table_row('Remote IP via $_SERVER["REMOTE_ADDR"]', '', '', $_SERVER["REMOTE_ADDR"], 'info');
+
+		if ( isset($_SERVER["HTTP_X_FORWARDED_FOR"]) ) {
+			$this->html_table_row('Remote IP via $_SERVER["HTTP_X_FORWARDED_FOR"]', '', '', $_SERVER["HTTP_X_FORWARDED_FOR"], 'info');
+		}
+
+		if ( isset($_SERVER["HTTP_X_FORWARDED"]) ) {
+			$this->html_table_row('Remote IP via $_SERVER["HTTP_X_FORWARDED"]', '', '', $_SERVER["HTTP_X_FORWARDED"], 'info');
+		}
+
+		if ( isset($_SERVER["HTTP_CLIENT_IP"]) ) {
+			$this->html_table_row('Remote IP via $_SERVER["HTTP_CLIENT_IP"]', '', '', $_SERVER["HTTP_CLIENT_IP"], 'info');
+		}
+
+		$this->html_table_row('Real remote IP via AJAX call', '', '', '... js loading ...', 'warning realip');
 	}
 		
 	public function test_php_extensions() {
@@ -449,6 +465,7 @@ class PHP_WP_Info {
 	public function return_bytes($val) {
 	    $val = trim($val);
 	    $last = strtolower($val[strlen($val)-1]);
+	    $val = (int) $val;
 	    switch($last) {
 	        // Le modifieur 'G' est disponible depuis PHP 5.1.0
 	        case 'g':
@@ -625,8 +642,16 @@ class PHP_WP_Info {
 
 		$output .= '<footer>&copy; <a href="http://beapi.fr">BE API</a> ' . date( 'Y' ) . '</footer>' . "\n";
 		$output .= '</div>' . "\n";
+
 		$output .= '<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>' . "\n";
 		$output .= '<script src="https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
+
+		$output .= '<script type="text/javascript">
+			$.getJSON("//freegeoip.net/json/?callback=?", function(data) {
+			  $(".realip td:last").html(data.ip);
+			});
+		</script>' . "\n";
+
 		$output .= '</body>' . "\n";
 		$output .= '</html>' . "\n";
 
