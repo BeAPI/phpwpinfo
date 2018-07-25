@@ -360,11 +360,11 @@ class PHP_WP_Info {
 		}
 		
 		$value = ini_get( 'max_input_vars' );
-		if ( intval( $value ) < 1000 ) {
-			$this->html_table_row( 'max_input_vars', '1000', '5000', $value, 'error' );
+		if ( intval( $value ) < 5000 ) {
+			$this->html_table_row( 'max_input_vars', '5000', '10000', $value, 'error' );
 		} else {
-			$status = (intval( $value ) >= 5000) ? 'success' : 'warning';
-			$this->html_table_row( 'max_input_vars', '1000', '5000', $value, $status );
+			$status = (intval( $value ) >= 10000 ) ? 'success' : 'warning';
+			$this->html_table_row( 'max_input_vars', '5000', '10000', $value, $status );
 		}
 
 		$value = ini_get( 'file_uploads' );
