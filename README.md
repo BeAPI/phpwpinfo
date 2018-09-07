@@ -2,7 +2,7 @@
 
 # phpwpinfo
 
-phpwpinfo provides an equivalent to the `phpinfo()` function but with more WordPress requirements details about the PHP/MySQL/Apache environment and also offers suggestions for improvement.
+phpwpinfo provides an equivalent to the `phpinfo()` function but with more WordPress requirements [details](#what-) about the PHP/MySQL/Apache environment and also offers suggestions for improvement.
  
 This tool allows you to quickly test environment server where you want to install WordPress.
 It is written in full PHP and use Bootstrap for HTML/CSS/JS purpose, provided by [CDN](http://www.bootstrapcdn.com).
