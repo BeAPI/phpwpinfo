@@ -1,6 +1,6 @@
 <?php
 /*
-Version 1.3
+Version 1.4.0
 Copyright 2012-2016 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
