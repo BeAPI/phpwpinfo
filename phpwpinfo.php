@@ -647,7 +647,7 @@ class PHP_WP_Info {
 		$output .= '<script src="https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
 
 		$output .= '<script type="text/javascript">
-			$.getJSON("//freegeoip.net/json/?callback=?", function(data) {
+			$.getJSON("https://freegeoip.net/json/?callback=?", function(data) {
 			  $(".realip td:last").html(data.ip);
 			});
 		</script>' . "\n";
