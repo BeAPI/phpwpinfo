@@ -1,7 +1,7 @@
 <?php
 /*
-Version 1.4.0
-Copyright 2012-2016 - Amaury Balmer (amaury@beapi.fr)
+Version 1.4.1
+Copyright 2012-2019 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as 
@@ -43,7 +43,7 @@ function phpwpinfo() {
  */
 class PHP_WP_Info {
 	private $debug_mode = true;
-	private $php_version = '5.2.4';
+	private $php_version = '5.6.40';
 	private $mysqli_version = '5.0';
 
 	private $db_infos = array();
@@ -114,9 +114,9 @@ class PHP_WP_Info {
 		// Test PHP Version
 		$php_version = phpversion();
 		if ( version_compare( $php_version, $this->php_version, '>=' ) ) {
-			$this->html_table_row( 'PHP Version', $this->php_version, '> 5.4', $php_version, 'success' );
+			$this->html_table_row( 'PHP Version', $this->php_version, '> 7.3', $php_version, 'success' );
 		} else {
-			$this->html_table_row( 'PHP Version', $this->php_version, '> 5.4', $php_version, 'error' );
+			$this->html_table_row( 'PHP Version', $this->php_version, '> 7.3', $php_version, 'error' );
 		}
 
 		// Test MYSQL Client extensions/version.
