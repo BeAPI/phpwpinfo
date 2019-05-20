@@ -1,6 +1,6 @@
 <?php
 /*
-Version 1.4.1
+Version 1.4.2
 Copyright 2012-2019 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
@@ -77,7 +77,6 @@ class PHP_WP_Info {
 
 		$this->_check_request_mysql();
 		$this->_check_request_adminer();
-		$this->_check_request_phpsecinfo();
 		$this->_check_request_wordpress();
 	}
 
@@ -1053,57 +1052,6 @@ class PHP_WP_Info {
 			}
 
 			die( 'Impossible remove file and uninstall Adminer with this script.' );
-		}
-	}
-
-	private function _check_request_phpsecinfo() {
-		// Check GET for Install phpsecinfo
-		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'install' ) {
-			$code = $this->file_get_contents_url( 'http://www.herewithme.fr/static/funkatron-phpsecinfo-b5a6155.zip' );
-			if ( ! empty( $code ) ) {
-				$result = file_put_contents( dirname( __FILE__ ) . '/phpsecinfo.zip', $code );
-				if ( $result != false ) {
-					$zip = new ZipArchive;
-					if ( $zip->open( dirname( __FILE__ ) . '/phpsecinfo.zip' ) === true ) {
-						$zip->extractTo( dirname( __FILE__ ) . '/phpsecinfo/' );
-						$zip->close();
-
-						unlink( dirname( __FILE__ ) . '/phpsecinfo.zip' );
-					} else {
-						unlink( dirname( __FILE__ ) . '/phpsecinfo.zip' );
-						die( 'Impossible to uncompress phpsecinfo with this script.' );
-					}
-
-					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
-					exit();
-				} else {
-					die( 'Impossible to write phpsecinfo archive with this script.' );
-				}
-			} else {
-				die( 'Impossible to download phpsecinfo with this script.' );
-			}
-		}
-
-		// Check GET for Uninstall phpsecinfo
-		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'uninstall' ) {
-			if ( is_dir( dirname( __FILE__ ) . '/phpsecinfo/' ) ) {
-				$this->rrmdir( dirname( __FILE__ ) . '/phpsecinfo/' );
-				if ( ! is_dir( dirname( __FILE__ ) . '/phpsecinfo/' ) ) {
-					header( "Location: http://" . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
-					exit();
-				}
-			}
-
-			die( 'Impossible remove file and uninstall phpsecinfo with this script.' );
-		}
-
-		// Check GET for load
-		if ( isset( $_GET ) && isset( $_GET['phpsecinfo'] ) && $_GET['phpsecinfo'] == 'load' ) {
-			if ( is_dir( dirname( __FILE__ ) . '/phpsecinfo/' ) ) {
-				require( dirname( __FILE__ ) . '/phpsecinfo/funkatron-phpsecinfo-b5a6155/PhpSecInfo/PhpSecInfo.php' );
-				phpsecinfo();
-				exit();
-			}
 		}
 	}
 
