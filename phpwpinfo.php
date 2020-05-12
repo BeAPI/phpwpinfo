@@ -1,7 +1,7 @@
 <?php
 /*
 Version 1.4.3
-Copyright 2012-2019 - Amaury Balmer (amaury@beapi.fr)
+Copyright 2012-2020 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as 
@@ -15,6 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+TODO:
+	Favicon
 */
 
 // Suppress DateTime warnings
@@ -605,14 +608,6 @@ class PHP_WP_Info {
 		} else {
 			$output .= '<li><a href="adminer.php">Adminer</a></li>' . "\n";
 			$output .= '<li><a href="?adminer=uninstall">Uninstall Adminer</a></li>' . "\n";
-		}
-
-		// PHP sec info
-		if ( ! is_dir( dirname( __FILE__ ) . '/phpsecinfo' ) && is_writable( dirname( __FILE__ ) ) && class_exists( 'ZipArchive' ) ) {
-			$output .= '<li><a href="?phpsecinfo=install">Install PhpSecInfo</a></li>' . "\n";
-		} else {
-			$output .= '<li><a href="?phpsecinfo=load">PhpSecInfo</a></li>' . "\n";
-			$output .= '<li><a href="?phpsecinfo=uninstall">Uninstall PhpSecInfo</a></li>' . "\n";
 		}
 
 		// WordPress

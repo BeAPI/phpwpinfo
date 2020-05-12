@@ -45,7 +45,6 @@ It also allows you to quickly view `phpinfo()` and MySQL variables.
 
 Finally, it allows (if you server allows it) to quickly install :
 * [Adminer](http://www.adminer.org/en/)
-* [PHPsecinfo](http://phpsec.org/projects/phpsecinfo/)
 * [Latest version of WordPress (US)](http://wordpress.org/)
 
 ## Contributing
