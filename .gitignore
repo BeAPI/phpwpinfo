@@ -1,2 +1,5 @@
 .lando.yml
 .idea
+wordpress
+adminer.php
+error_log.txt
