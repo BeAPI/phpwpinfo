@@ -94,13 +94,17 @@ class PHP_WP_Info {
 		$this->test_form_mail();
 
 		$this->get_footer();
-	}	
+	}
 
 	/**
 	 * Main test, check if php/mysql/git are installed and right version for WP
 	 */
 	public function test_versions() {
-		$this->html_table_open( 'General informations & tests PHP/MySQL Version', '', 'Required', 'Recommended', 'Current' );
+		$this->html_table_open( 'General informations & tests PHP/MySQL Version',
+		                        '',
+		                        'Required',
+		                        'Recommended',
+		                        'Current' );
 
 		// Webserver used
 		$this->html_table_row( 'Web server', $this->_get_current_webserver(), '', '', 'info', 3 );
@@ -108,7 +112,7 @@ class PHP_WP_Info {
 		// Test PHP Version
 		$sapi_type = php_sapi_name();
 		if ( strpos( $sapi_type, 'cgi' ) !== false ) {
-			$this->html_table_row( 'PHP Type', 'CGI with Apache Worker or another webserver', '', '','success', 3 );
+			$this->html_table_row( 'PHP Type', 'CGI with Apache Worker or another webserver', '', '', 'success', 3 );
 		} else {
 			$this->html_table_row( 'PHP Type', 'Apache Module (low performance)', '', '', 'warning', 3 );
 		}
@@ -126,7 +130,11 @@ class PHP_WP_Info {
 			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Not installed', 'error' );
 		} else {
 			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Installed', 'success' );
-			$this->html_table_row( 'PHP MySQLi Client Version', $this->mysqli_version, '> 5.5', mysqli_get_client_info(), 'info' );
+			$this->html_table_row( 'PHP MySQLi Client Version',
+			                       $this->mysqli_version,
+			                       '> 5.5',
+			                       mysqli_get_client_info(),
+			                       'info' );
 		}
 
 		// Test MySQL Server Version
@@ -141,48 +149,67 @@ class PHP_WP_Info {
 			// Show MySQL Form
 			$this->html_form_mysql( ( $this->db_infos === false ) ? true : false );
 
-			$this->html_table_row( 'MySQL Version', $this->mysqli_version, '-', 'Not available, needs credentials.', 'warning' );
+			$this->html_table_row( 'MySQL Version',
+			                       $this->mysqli_version,
+			                       '-',
+			                       'Not available, needs credentials.',
+			                       'warning' );
 		}
 
 		// Test if the server is connected to the server by attempt to find the IP(v4) of www.google.fr
-		if( gethostbyname('www.google.fr') != 'www.google.fr' ) {
-			$this->html_table_row('Internet connectivity (Google)', 'No', 'Yes', 'Yes', 'success');
+		if ( gethostbyname( 'www.google.fr' ) != 'www.google.fr' ) {
+			$this->html_table_row( 'Internet connectivity (Google)', 'No', 'Yes', 'Yes', 'success' );
 		} else {
-			$this->html_table_row('Internet connectivity (Google)', 'No', 'Yes', 'No', 'error');
+			$this->html_table_row( 'Internet connectivity (Google)', 'No', 'Yes', 'No', 'error' );
 		}
 
 		// Test if the command 'git' exists, so it tests if Git is installed
-		if ($this->_command_exists('git') == 1 ) {
-			$this->html_table_row('GIT is installed?', 'No', 'Yes', 'Yes');
+		if ( $this->_command_exists( 'git' ) == 1 ) {
+			$this->html_table_row( 'GIT is installed?', 'No', 'Yes', 'Yes' );
 		} else {
-			$this->html_table_row('GIT is installed?', 'No', 'Yes', 'No', 'error');
+			$this->html_table_row( 'GIT is installed?', 'No', 'Yes', 'No', 'error' );
 		}
 
-		$this->html_table_row('Remote IP via $_SERVER["REMOTE_ADDR"]', '', '', $_SERVER["REMOTE_ADDR"], 'info');
+		$this->html_table_row( 'Remote IP via $_SERVER["REMOTE_ADDR"]', '', '', $_SERVER["REMOTE_ADDR"], 'info' );
 
-		if ( isset($_SERVER["HTTP_X_FORWARDED_FOR"]) ) {
-			$this->html_table_row('Remote IP via $_SERVER["HTTP_X_FORWARDED_FOR"]', '', '', $_SERVER["HTTP_X_FORWARDED_FOR"], 'info');
+		if ( isset( $_SERVER["HTTP_X_FORWARDED_FOR"] ) ) {
+			$this->html_table_row( 'Remote IP via $_SERVER["HTTP_X_FORWARDED_FOR"]',
+			                       '',
+			                       '',
+			                       $_SERVER["HTTP_X_FORWARDED_FOR"],
+			                       'info' );
 		}
 
-		if ( isset($_SERVER["HTTP_X_FORWARDED"]) ) {
-			$this->html_table_row('Remote IP via $_SERVER["HTTP_X_FORWARDED"]', '', '', $_SERVER["HTTP_X_FORWARDED"], 'info');
+		if ( isset( $_SERVER["HTTP_X_FORWARDED"] ) ) {
+			$this->html_table_row( 'Remote IP via $_SERVER["HTTP_X_FORWARDED"]',
+			                       '',
+			                       '',
+			                       $_SERVER["HTTP_X_FORWARDED"],
+			                       'info' );
 		}
 
-		if ( isset($_SERVER["HTTP_CLIENT_IP"]) ) {
-			$this->html_table_row('Remote IP via $_SERVER["HTTP_CLIENT_IP"]', '', '', $_SERVER["HTTP_CLIENT_IP"], 'info');
+		if ( isset( $_SERVER["HTTP_CLIENT_IP"] ) ) {
+			$this->html_table_row( 'Remote IP via $_SERVER["HTTP_CLIENT_IP"]',
+			                       '',
+			                       '',
+			                       $_SERVER["HTTP_CLIENT_IP"],
+			                       'info' );
 		}
 
-		$this->html_table_row('Real remote IP via AJAX call', '', '', '... js loading ...', 'warning realip');
+		$this->html_table_row( 'Real remote IP via AJAX call', '', '', '... js loading ...', 'warning realip' );
 	}
-		
+
 	public function test_php_extensions() {
-		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended','Current' );
+		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended', 'Current' );
 
 		/**
 		 * Check GD and Imagick like WordPress does.
 		 */
-		$gd = extension_loaded( 'gd' ) && function_exists( 'gd_info' );
-		$imagick = extension_loaded( 'imagick' ) &&  class_exists( 'Imagick', false ) &&  class_exists( 'ImagickPixel', false ) && version_compare( phpversion( 'imagick' ), '2.2.0', '>=' );
+		$gd      = extension_loaded( 'gd' ) && function_exists( 'gd_info' );
+		$imagick = extension_loaded( 'imagick' ) && class_exists( 'Imagick', false ) && class_exists( 'ImagickPixel',
+		                                                                                              false ) && version_compare( phpversion( 'imagick' ),
+		                                                                                                                          '2.2.0',
+		                                                                                                                          '>=' );
 
 		// GD/Imagick lib.
 		if ( $gd ) {
@@ -220,19 +247,43 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Installed', 'success' );
 		}
-		
+
 		if ( is_callable( 'opcache_reset' ) ) {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Zend OPcache Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)',
+			                       'No',
+			                       'Yes',
+			                       'Zend OPcache Installed',
+			                       'success' );
 		} elseif ( is_callable( 'eaccelerator_put' ) ) {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'eAccelerator Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)',
+			                       'No',
+			                       'Yes',
+			                       'eAccelerator Installed',
+			                       'success' );
 		} elseif ( is_callable( 'xcache_set' ) ) {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'XCache Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)',
+			                       'No',
+			                       'Yes',
+			                       'XCache Installed',
+			                       'success' );
 		} elseif ( is_callable( 'apc_store' ) ) {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'APC Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)',
+			                       'No',
+			                       'Yes',
+			                       'APC Installed',
+			                       'success' );
 		} elseif ( is_callable( 'zend_optimizer_version' ) ) {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizerr)', 'No', 'Yes', 'Zend Optimizer Installed', 'success' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizerr)',
+			                       'No',
+			                       'Yes',
+			                       'Zend Optimizer Installed',
+			                       'success' );
 		} else {
-			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)', 'No', 'Yes', 'Not installed', 'warning' );
+			$this->html_table_row( 'Opcode (Zend OPcache, APC, Xcache, eAccelerator or Zend Optimizer)',
+			                       'No',
+			                       'Yes',
+			                       'Not installed',
+			                       'warning' );
 		}
 
 		if ( ! class_exists( 'Memcache' ) ) {
@@ -240,7 +291,7 @@ class PHP_WP_Info {
 		} else {
 			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Installed', 'success' );
 		}
-		
+
 		if ( ! class_exists( 'Memcached' ) ) {
 			$this->html_table_row( 'Memcached', 'No', 'Yes', 'Not installed', 'info' );
 		} else {
@@ -287,20 +338,20 @@ class PHP_WP_Info {
 
 		$current_modules = (array) $this->_get_apache_modules();
 		$modules         = array(
-			'mod_deflate' => false,
-			'mod_env' => false,
-			'mod_expires' => false,
-			'mod_headers' => false,
-			'mod_filter' => false,
-			'mod_mime' => false,
-			'mod_rewrite' => true,
+			'mod_deflate'  => false,
+			'mod_env'      => false,
+			'mod_expires'  => false,
+			'mod_headers'  => false,
+			'mod_filter'   => false,
+			'mod_mime'     => false,
+			'mod_rewrite'  => true,
 			'mod_setenvif' => false,
 		);
 
 		$this->html_table_open( 'Apache Modules', '', 'Required', 'Recommended', 'Current' );
 
 		foreach ( $modules as $module => $is_required ) {
-			$is_required = ($is_required == true ) ? 'Yes' : 'No'; // Boolean to Yes/NO
+			$is_required = ( $is_required == true ) ? 'Yes' : 'No'; // Boolean to Yes/NO
 
 			$name = ucfirst( str_replace( 'mod_', '', $module ) );
 			if ( ! in_array( $module, $current_modules ) ) {
@@ -354,18 +405,18 @@ class PHP_WP_Info {
 		}
 
 		$value = $this->return_bytes( ini_get( 'memory_limit' ) );
-		if ( intval( $value ) < $this->return_bytes('64M') ) {
-			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes($value), 'error' );
+		if ( intval( $value ) < $this->return_bytes( '64M' ) ) {
+			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes( $value ), 'error' );
 		} else {
-			$status = (intval( $value ) >= $this->return_bytes('256M')) ? 'success' : 'warning';
-			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes($value), $status );
+			$status = ( intval( $value ) >= $this->return_bytes( '256M' ) ) ? 'success' : 'warning';
+			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes( $value ), $status );
 		}
-		
+
 		$value = ini_get( 'max_input_vars' );
 		if ( intval( $value ) < 5000 ) {
 			$this->html_table_row( 'max_input_vars', '5000', '10000', $value, 'error' );
 		} else {
-			$status = (intval( $value ) >= 10000 ) ? 'success' : 'warning';
+			$status = ( intval( $value ) >= 10000 ) ? 'success' : 'warning';
 			$this->html_table_row( 'max_input_vars', '5000', '10000', $value, $status );
 		}
 
@@ -377,19 +428,19 @@ class PHP_WP_Info {
 		}
 
 		$value = $this->return_bytes( ini_get( 'upload_max_filesize' ) );
-		if ( intval( $value ) < $this->return_bytes('32M') ) {
-			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes($value), 'error' );
+		if ( intval( $value ) < $this->return_bytes( '32M' ) ) {
+			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes( $value ), 'error' );
 		} else {
-			$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
-			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes($value), $status );
+			$status = ( intval( $value ) >= $this->return_bytes( '128M' ) ) ? 'success' : 'warning';
+			$this->html_table_row( 'upload_max_filesize', '32 MB', '128 MB', $this->_format_bytes( $value ), $status );
 		}
 
 		$value = $this->return_bytes( ini_get( 'post_max_size' ) );
-		if ( intval( $value ) < $this->return_bytes('32M') ) {
-			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes($value), 'warning' );
+		if ( intval( $value ) < $this->return_bytes( '32M' ) ) {
+			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes( $value ), 'warning' );
 		} else {
-			$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
-			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes($value), $status );
+			$status = ( intval( $value ) >= $this->return_bytes( '128M' ) ) ? 'success' : 'warning';
+			$this->html_table_row( 'post_max_size', '32 MB', '128 MB', $this->_format_bytes( $value ), $status );
 		}
 
 		$value = ini_get( 'short_open_tag' );
@@ -448,11 +499,11 @@ class PHP_WP_Info {
 
 		if ( is_callable( 'apc_store' ) ) {
 			$value = $this->return_bytes( ini_get( 'apc.shm_size' ) );
-			if ( intval( $value ) < $this->return_bytes('32M') ) {
-				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes($value), 'error' );
+			if ( intval( $value ) < $this->return_bytes( '32M' ) ) {
+				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes( $value ), 'error' );
 			} else {
-				$status = (intval( $value ) >= $this->return_bytes('128M')) ? 'success' : 'warning';
-				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes($value), $status );
+				$status = ( intval( $value ) >= $this->return_bytes( '128M' ) ) ? 'success' : 'warning';
+				$this->html_table_row( 'apc.shm_size', '32 MB', '128 MB', $this->_format_bytes( $value ), $status );
 			}
 		}
 
@@ -462,23 +513,23 @@ class PHP_WP_Info {
 	/**
 	 * Convert PHP variable (G/M/K) to bytes
 	 * Source: http://php.net/manual/fr/function.ini-get.php
-	 * 
+	 *
 	 */
-	public function return_bytes($val) {
-	    $val = trim($val);
-	    $last = strtolower($val[strlen($val)-1]);
-	    $val = (int) $val;
-	    switch($last) {
-	        // Le modifieur 'G' est disponible depuis PHP 5.1.0
-	        case 'g':
-	            $val *= 1024;
-	        case 'm':
-	            $val *= 1024;
-	        case 'k':
-	            $val *= 1024;
-	    }
+	public function return_bytes( $val ) {
+		$val  = trim( $val );
+		$last = strtolower( $val[ strlen( $val ) - 1 ] );
+		$val  = (int) $val;
+		switch ( $last ) {
+			// Le modifieur 'G' est disponible depuis PHP 5.1.0
+			case 'g':
+				$val *= 1024;
+			case 'm':
+				$val *= 1024;
+			case 'k':
+				$val *= 1024;
+		}
 
-	    return $val;
+		return $val;
 	}
 
 	/**
@@ -505,11 +556,19 @@ class PHP_WP_Info {
 		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_size'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
-				if ( intval( $row['Value'] ) >= $this->return_bytes('8M') ) {
-					$status = (intval( $row['Value'] ) >= $this->return_bytes('64M')) ? 'success' : 'warning';
-					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), $status );
+				if ( intval( $row['Value'] ) >= $this->return_bytes( '8M' ) ) {
+					$status = ( intval( $row['Value'] ) >= $this->return_bytes( '64M' ) ) ? 'success' : 'warning';
+					$this->html_table_row( "Query cache size",
+					                       '8M',
+					                       '64MB',
+					                       $this->_format_bytes( (int) $row['Value'] ),
+					                       $status );
 				} else {
-					$this->html_table_row( "Query cache size", '8M', '64MB', $this->_format_bytes( (int) $row['Value'] ), 'error' );
+					$this->html_table_row( "Query cache size",
+					                       '8M',
+					                       '64MB',
+					                       $this->_format_bytes( (int) $row['Value'] ),
+					                       'error' );
 				}
 			}
 		}
@@ -518,7 +577,11 @@ class PHP_WP_Info {
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'on' || strtolower( $row['Value'] ) == '1' ) {
-					$this->html_table_row( "Query cache type", '1 or on', '1 or on', strtolower( $row['Value'] ), 'success' );
+					$this->html_table_row( "Query cache type",
+					                       '1 or on',
+					                       '1 or on',
+					                       strtolower( $row['Value'] ),
+					                       'success' );
 				} else {
 					$this->html_table_row( "Query cache type", '1', '1', strtolower( $row['Value'] ), 'error' );
 				}
@@ -526,7 +589,7 @@ class PHP_WP_Info {
 		}
 
 		$is_log_slow_queries = false;
-		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'log_slow_queries'" );
+		$result              = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'log_slow_queries'" );
 		if ( $result != false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) == 'yes' || strtolower( $row['Value'] ) == 'on' ) {
@@ -646,7 +709,7 @@ class PHP_WP_Info {
 			}
 			</script>' . "\n";
 
-		$output .= '<script type="application/javascript" src="https://api.ipify.org?format=jsonp&callback=getIP"></script>'. "\n";
+		$output .= '<script type="application/javascript" src="https://api.ipify.org?format=jsonp&callback=getIP"></script>' . "\n";
 
 		$output .= '</body>' . "\n";
 		$output .= '</html>' . "\n";
@@ -672,7 +735,7 @@ class PHP_WP_Info {
 		if ( ! empty( $col1 ) || ! empty( $col2 ) || ! empty( $col3 ) || ! empty( $col4 ) ) {
 			$output .= '<tr>' . "\n";
 			$output .= '<th width="40%">' . $col1 . '</th>' . "\n";
-			if ( !empty($col4) ) {
+			if ( ! empty( $col4 ) ) {
 				$output .= '<th width="20%">' . $col2 . '</th>' . "\n";
 				$output .= '<th width="20%">' . $col3 . '</th>' . "\n";
 				$output .= '<th width="20%">' . $col4 . '</th>' . "\n";
@@ -699,8 +762,8 @@ class PHP_WP_Info {
 		$output .= '</tbody>' . "\n";
 		$output .= '</table>' . "\n";
 
-		if ( !empty($description) ) {
-			$output .= '<p class="description">'.$description.'</p>' . "\n";
+		if ( ! empty( $description ) ) {
+			$output .= '<p class="description">' . $description . '</p>' . "\n";
 		}
 
 		echo $output;
@@ -738,9 +801,10 @@ class PHP_WP_Info {
 	/**
 	 * Form HTML for MySQL Login
 	 *
-	 * @param  boolean $show_error_credentials [description]
-	 *
 	 * @return void                          [description]
+	 *
+	 * @param boolean $show_error_credentials [description]
+	 *
 	 */
 	public function html_form_mysql( $show_error_credentials = false ) {
 		$output = '';
@@ -781,7 +845,9 @@ class PHP_WP_Info {
 			if ( ! filter_var( $_POST['mail'], FILTER_VALIDATE_EMAIL ) ) {// Invalid
 				$output .= '<div class="alert alert-error">Email invalid.</div>' . "\n";
 			} else {// Valid mail
-				if ( mail( $_POST['mail'], 'Email test with PHP WP Info', "Line 1\nLine 2\nLine 3\nGreat !" ) ) {// Valid send
+				if ( mail( $_POST['mail'],
+				           'Email test with PHP WP Info',
+				           "Line 1\nLine 2\nLine 3\nGreat !" ) ) {// Valid send
 					$output .= '<div class="alert alert-success">Mail sent with success.</div>' . "\n";
 				} else {// Error send
 					$output .= '<div class="alert alert-error">An error occured during mail sending.</div>' . "\n";
@@ -803,9 +869,10 @@ class PHP_WP_Info {
 	/**
 	 * Stripslashes array
 	 *
+	 * @return array|string [type]        [description]
+	 *
 	 * @param  [type] $value [description]
 	 *
-	 * @return array|string [type]        [description]
 	 */
 	public function stripslashes_deep( $value ) {
 		return is_array( $value ) ? array_map( array( &$this, 'stripslashes_deep' ), $value ) : stripslashes( $value );
@@ -873,9 +940,10 @@ class PHP_WP_Info {
 	/**
 	 * Get humans values, take from http://php.net/manual/de/function.filesize.php
 	 *
+	 * @return string [description]
+	 *
 	 * @param $size
 	 *
-	 * @return string [description]
 	 * @internal param int $bytes [description]
 	 */
 	private function _format_bytes( $size ) {
@@ -890,17 +958,17 @@ class PHP_WP_Info {
 	private function _variable_to_html( $variable ) {
 		if ( $variable === true ) {
 			return 'true';
-		} else if ( $variable === false ) {
+		} elseif ( $variable === false ) {
 			return 'false';
-		} else if ( $variable === null ) {
+		} elseif ( $variable === null ) {
 			return 'null';
-		} else if ( is_array( $variable ) ) {
+		} elseif ( is_array( $variable ) ) {
 			$html = "<table class='table table-bordered'>\n";
 			$html .= "<thead><tr><th>Key</th><th>Value</th></tr></thead>\n";
 			$html .= "<tbody>\n";
 			foreach ( $variable as $key => $value ) {
 				$value = $this->_variable_to_html( $value );
-				$html .= "<tr><td>$key</td><td>$value</td></tr>\n";
+				$html  .= "<tr><td>$key</td><td>$value</td></tr>\n";
 			}
 			$html .= "</tbody>\n";
 			$html .= "</table>";
@@ -922,7 +990,9 @@ class PHP_WP_Info {
 			curl_setopt( $curl, CURLOPT_CONNECTTIMEOUT, 15 );
 			//The number of seconds to wait while trying to connect.
 
-			curl_setopt( $curl, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)' );
+			curl_setopt( $curl,
+			             CURLOPT_USERAGENT,
+			             'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)' );
 			//The contents of the "User-Agent: " header to be used in a HTTP request.
 			curl_setopt( $curl, CURLOPT_FAILONERROR, true );
 			//To fail silently if the HTTP code returned is greater than or equal to 400.
@@ -992,7 +1062,9 @@ class PHP_WP_Info {
 
 		// Check credentials
 		if ( ! empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysqli_connect' ) ) {
-			$this->db_link = mysqli_connect( $this->db_infos['host'], $this->db_infos['user'], $this->db_infos['password'] );
+			$this->db_link = mysqli_connect( $this->db_infos['host'],
+			                                 $this->db_infos['user'],
+			                                 $this->db_infos['password'] );
 			if ( $this->db_link == false ) {
 				unset( $_SESSION['credentials'] );
 				$this->db_infos = false;
@@ -1086,28 +1158,29 @@ class PHP_WP_Info {
 	 * Determines if a command exists on the current environment
 	 * Source: https://stackoverflow.com/questions/12424787/how-to-check-if-a-shell-command-exists-from-php
 	 *
-	 * @param string $command The command to check
 	 * @return bool True if the command has been found ; otherwise, false.
+	 *
+	 * @param string $command The command to check
 	 */
-	private function _command_exists($command) {
-		$whereIsCommand = (PHP_OS == 'WINNT') ? 'where' : 'which';
+	private function _command_exists( $command ) {
+		$whereIsCommand = ( PHP_OS == 'WINNT' ) ? 'where' : 'which';
 
 		$process = proc_open(
 			"$whereIsCommand $command",
 			array(
-				0 => array("pipe", "r"), //STDIN
-				1 => array("pipe", "w"), //STDOUT
-				2 => array("pipe", "w"), //STDERR
+				0 => array( "pipe", "r" ), //STDIN
+				1 => array( "pipe", "w" ), //STDOUT
+				2 => array( "pipe", "w" ), //STDERR
 			),
 			$pipes
 		);
 
-		if ($process !== false) {
-			$stdout = stream_get_contents($pipes[1]);
-			$stderr = stream_get_contents($pipes[2]);
-			fclose($pipes[1]);
-			fclose($pipes[2]);
-			proc_close($process);
+		if ( $process !== false ) {
+			$stdout = stream_get_contents( $pipes[1] );
+			$stderr = stream_get_contents( $pipes[2] );
+			fclose( $pipes[1] );
+			fclose( $pipes[2] );
+			proc_close( $process );
 
 			return $stdout != '';
 		}
