@@ -43,9 +43,11 @@ function phpwpinfo() {
 }
 
 class PHP_WP_Info {
+
 	private $debug_mode = true;
 	private $php_version = '5.6.20';
 	private $mysql_version = '5.0';
+	private $curl_version = '7.38';
 
 	private $db_infos = array();
 	private $db_link = false;
@@ -87,7 +89,7 @@ class PHP_WP_Info {
 		$this->test_versions();
 		$this->test_php_config();
 		$this->test_php_extensions();
-		$this->test_mysqli_config();
+		$this->test_mysql_config();
 		$this->test_apache_modules();
 		$this->test_form_mail();
 
@@ -199,6 +201,36 @@ class PHP_WP_Info {
 	public function test_php_extensions() {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended', 'Current' );
 
+		$extensions = array(
+			'pcre'      => 'error',
+			'curl'      => 'error',
+			'zlib'      => 'error',
+			'mbstring'  => 'error',
+			'iconv'     => 'error',
+			'xmlreader' => 'error',
+			'xml'       => 'error',
+			'suhosin'   => 'info',
+			'memcache'  => 'info',
+			'memcached' => 'info',
+			'redis'     => 'info',
+			'tidy'      => 'info',
+			'zip'       => 'info',
+			'ftp'       => 'info',
+			'exif'      => 'info',
+			'xdebug'    => 'info',
+			'newrelic'  => 'info',
+			'blackfire' => 'info',
+		);
+
+		foreach ( $extensions as $extension => $status ) {
+			if ( ! extension_loaded( $extension ) ) {
+				$is_wp_requirements = ( 'error' === $status ) ? 'Yes' : 'No';
+				$this->html_table_row( $extension, $is_wp_requirements, 'Yes', 'Not installed', $status );
+			} else {
+				$this->html_table_row( $extension, 'Yes', 'Yes', 'Installed', 'success' );
+			}
+		}
+
 		/**
 		 * Check GD and Imagick like WordPress does.
 		 */
@@ -219,30 +251,6 @@ class PHP_WP_Info {
 
 		if ( ! $gd && ! $imagick ) {
 			$this->html_table_row( 'Image manipulation (GD, Imagick)', 'Yes', 'Yes', 'Not installed', 'error' );
-		}
-
-		if ( ! class_exists( 'ZipArchive' ) ) {
-			$this->html_table_row( 'ZIP', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'ZIP', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! is_callable( 'ftp_connect' ) ) {
-			$this->html_table_row( 'FTP', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'FTP', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! is_callable( 'exif_read_data' ) ) {
-			$this->html_table_row( 'Exif', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Exif', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! is_callable( 'curl_init' ) ) {
-			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Not installed', 'warning' );
-		} else {
-			$this->html_table_row( 'CURL', 'Yes*', 'Yes', 'Installed', 'success' );
 		}
 
 		if ( is_callable( 'opcache_reset' ) ) {
@@ -283,30 +291,6 @@ class PHP_WP_Info {
 			                       'warning' );
 		}
 
-		if ( ! class_exists( 'Memcache' ) ) {
-			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Memcache', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! class_exists( 'Memcached' ) ) {
-			$this->html_table_row( 'Memcached', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Memcached', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! is_callable( 'mb_substr' ) ) {
-			$this->html_table_row( 'Multibyte String', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Multibyte String', 'No', 'Yes', 'Installed', 'success' );
-		}
-
-		if ( ! class_exists( 'tidy' ) ) {
-			$this->html_table_row( 'Tidy', 'No', 'Yes', 'Not installed', 'info' );
-		} else {
-			$this->html_table_row( 'Tidy', 'No', 'Yes', 'Installed', 'success' );
-		}
-
 		if ( ! is_callable( 'finfo_open' ) && ! is_callable( 'mime_content_type' ) ) {
 			$this->html_table_row( 'Mime type', 'Yes*', 'Yes', 'Not installed', 'warning' );
 		} else {
@@ -323,6 +307,15 @@ class PHP_WP_Info {
 			$this->html_table_row( 'set_time_limit', 'No', 'Yes', 'Not Available', 'info' );
 		} else {
 			$this->html_table_row( 'set_time_limit', 'No', 'Yes', 'Available', 'success' );
+		}
+
+		if ( extension_loaded( 'curl' ) ) {
+			$curl = curl_version();
+			$this->html_table_row( 'Curl version',
+			                       '-',
+			                       $this->curl_version,
+			                       sprintf( '%s %s', $curl['version'], $curl['ssl_version'] ),
+			                       'info' );
 		}
 
 		$this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
@@ -387,6 +380,22 @@ class PHP_WP_Info {
 		} else {
 			$status = ( (int) $value >= 10000 ) ? 'success' : 'warning';
 			$this->html_table_row( 'max_input_vars', '5000', '10000', $value, $status );
+		}
+
+		$value = ini_get( 'max_execution_time' );
+		if ( (int) $value < 60 ) {
+			$this->html_table_row( 'max_execution_time', '-', '300', $value, 'error' );
+		} else {
+			$status = ( (int) $value >= 300 ) ? 'success' : 'warning';
+			$this->html_table_row( 'max_execution_time', '-', '300', $value, $status );
+		}
+
+		$value = ini_get( 'max_input_time' );
+		if ( (int) $value < 60 ) {
+			$this->html_table_row( 'max_input_time', '-', '300', $value, 'error' );
+		} else {
+			$status = ( (int) $value >= 300 ) ? 'success' : 'warning';
+			$this->html_table_row( 'max_input_time', '-', '300', $value, $status );
 		}
 
 		$value = ini_get( 'file_uploads' );
@@ -499,7 +508,7 @@ class PHP_WP_Info {
 	/**
 	 * @return void
 	 */
-	public function test_mysqli_config() {
+	public function test_mysql_config() {
 		if ( $this->db_link === false ) {
 			return;
 		}
@@ -510,9 +519,9 @@ class PHP_WP_Info {
 		if ( $result !== false ) {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) === 'yes' ) {
-					$this->html_table_row( 'Query cache', 'Yes*', 'Yes', 'Yes', 'success' );
+					$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'error' );
 				} else {
-					$this->html_table_row( 'Query cache', 'Yes*', 'Yes', 'False', 'error' );
+					$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'success' );
 				}
 			}
 		}
@@ -542,12 +551,16 @@ class PHP_WP_Info {
 			while ( $row = mysqli_fetch_assoc( $result ) ) {
 				if ( strtolower( $row['Value'] ) === 'on' || strtolower( $row['Value'] ) === '1' ) {
 					$this->html_table_row( 'Query cache type',
-					                       '1 or on',
+					                       '0 or off',
 					                       '1 or on',
 					                       strtolower( $row['Value'] ),
-					                       'success' );
+					                       'error' );
 				} else {
-					$this->html_table_row( 'Query cache type', '1', '1', strtolower( $row['Value'] ), 'error' );
+					$this->html_table_row( 'Query cache type',
+					                       '0',
+					                       $row['Value'],
+					                       strtolower( $row['Value'] ),
+					                       'success' );
 				}
 			}
 		}
@@ -576,8 +589,7 @@ class PHP_WP_Info {
 				}
 			}
 		}
-
-		$this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
+		// $this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
 	}
 
 	public function test_form_mail() {
