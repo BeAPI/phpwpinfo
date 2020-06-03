@@ -46,11 +46,15 @@ class PHP_WP_Info {
 
 	private $debug_mode = true;
 	private $php_version = '5.6.20';
-	private $mysql_version = '5.0';
+	private $mysql_version = '5.0'; // TODO: Min MariaDB version ?
 	private $curl_version = '7.38';
+	private $redis_version = '3.0'; // TODO: Check vs plugin ?
 
 	private $db_infos = array();
 	private $db_link = false;
+
+	private $redis_infos = array();
+	private $redis_link = false;
 
 	public function __construct() {
 		@session_start();
@@ -78,7 +82,8 @@ class PHP_WP_Info {
 			die( 'Self-destruction OK !' );
 		}
 
-		$this->_check_request_mysql();
+		$this->_check_request_database();
+		$this->_check_request_redis();
 		$this->_check_request_adminer();
 		$this->_check_request_wordpress();
 	}
@@ -89,18 +94,19 @@ class PHP_WP_Info {
 		$this->test_versions();
 		$this->test_php_config();
 		$this->test_php_extensions();
-		$this->test_mysql_config();
+		$this->test_database_config();
 		$this->test_apache_modules();
 		$this->test_form_mail();
+		$this->test_form_redis();
 
 		$this->get_footer();
 	}
 
 	/**
-	 * Main test, check if php/mysql/git are installed and right version for WP
+	 * Main test, check if php/databse/git are installed and right version for WP
 	 */
 	public function test_versions() {
-		$this->html_table_open( 'General informations & tests PHP/MySQL Version',
+		$this->html_table_open( 'General informations & tests PHP/Database Version',
 		                        '',
 		                        'Required',
 		                        'Recommended',
@@ -124,7 +130,7 @@ class PHP_WP_Info {
 			$this->html_table_row( 'PHP Version', $this->php_version, '> 7.3', $php_version, 'error' );
 		}
 
-		// Test MYSQL Client extensions/version.
+		// Test Database Client extensions/version.
 		if ( ! extension_loaded( 'mysqli' ) || ! is_callable( 'mysqli_connect' ) ) {
 			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Not installed', 'error' );
 		} else {
@@ -136,22 +142,22 @@ class PHP_WP_Info {
 			                       'info' );
 		}
 
-		// Test MySQL Server Version
+		// Test Databse Server Version
 		if ( $this->db_link !== false && is_callable( 'mysqli_get_server_info' ) ) {
 			$mysql_version = preg_replace( '/[^0-9.].*/', '', mysqli_get_server_info( $this->db_link ) );
 			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'success' );
+				$this->html_table_row( 'Database Version', $this->mysql_version, '> 5.5', $mysql_version, 'success' );
 			} else {
-				$this->html_table_row( 'MySQL Version', $this->mysql_version, '> 5.5', $mysql_version, 'error' );
+				$this->html_table_row( 'Database Version', $this->mysql_version, '> 5.5', $mysql_version, 'error' );
 			}
 		} else {
-			// Show MySQL Form
-			$this->html_form_mysql( $this->db_infos === false );
+			// Show Database Form
+			$this->html_form_database( $this->db_infos === false );
 
-			$this->html_table_row( 'MySQL Version',
+			$this->html_table_row( 'Database Version',
 			                       $this->mysql_version,
 			                       '-',
-			                       'Not available, needs credentials.',
+			                       'Not available, needs database credentials.',
 			                       'warning' );
 		}
 
@@ -483,7 +489,7 @@ class PHP_WP_Info {
 
 	/**
 	 * Convert PHP variable (G/M/K) to bytes
-	 * Source: http://php.net/manual/fr/function.ini-get.php
+	 * Source: https://php.net/manual/fr/function.ini-get.php
 	 * @return int|string
 	 *
 	 * @param $val
@@ -508,12 +514,12 @@ class PHP_WP_Info {
 	/**
 	 * @return void
 	 */
-	public function test_mysql_config() {
+	public function test_database_config() {
 		if ( $this->db_link === false ) {
 			return;
 		}
 
-		$this->html_table_open( 'MySQL Configuration', '', 'Required', 'Recommended', 'Current' );
+		$this->html_table_open( 'Database Configuration', '', 'Required', 'Recommended', 'Current' );
 
 		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'have_query_cache'" );
 		if ( $result !== false ) {
@@ -625,10 +631,20 @@ class PHP_WP_Info {
 
 		if ( $this->db_link !== false ) {
 			$output .= '<li class="dropdown">' . "\n";
-			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">MySQL <b class="caret"></b></a>' . "\n";
+			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">Database <b class="caret"></b></a>' . "\n";
 			$output .= '<ul class="dropdown-menu">' . "\n";
-			$output .= '<li><a href="?mysql-variables=true">MySQL Variables</a></li>' . "\n";
-			$output .= '<li><a href="?logout=true">Logout</a></li>' . "\n";
+			$output .= '<li><a href="?database-variables=true">Database Variables</a></li>' . "\n";
+			$output .= '<li><a href="?logout-db=true">Logout database</a></li>' . "\n";
+			$output .= '</ul>' . "\n";
+			$output .= '</li>' . "\n";
+		}
+
+		if ( $this->redis_link !== false ) {
+			$output .= '<li class="dropdown">' . "\n";
+			$output .= '<a href="#" class="dropdown-toggle" data-toggle="dropdown">Redis <b class="caret"></b></a>' . "\n";
+			$output .= '<ul class="dropdown-menu">' . "\n";
+			$output .= '<li><a href="?redis-variables=true">Redis Variables</a></li>' . "\n";
+			$output .= '<li><a href="?logout-redis=true">Logout redis</a></li>' . "\n";
 			$output .= '</ul>' . "\n";
 			$output .= '</li>' . "\n";
 		}
@@ -671,7 +687,7 @@ class PHP_WP_Info {
 	public function get_footer() {
 		$output = '';
 
-		$output .= '<footer>&copy; <a href="http://beapi.fr">BE API</a> ' . date( 'Y' ) . '</footer>' . "\n";
+		$output .= '<footer>&copy; <a href="https://beapi.fr">BE API</a> ' . date( 'Y' ) . '</footer>' . "\n";
 		$output .= '</div>' . "\n";
 
 		$output .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>' . "\n";
@@ -774,31 +790,139 @@ class PHP_WP_Info {
 	}
 
 	/**
-	 * Form HTML for MySQL Login
+	 * Form HTML for Database Login
 	 *
 	 * @return void                          [description]
 	 *
-	 * @param boolean $show_error_credentials [description]
+	 * @param boolean $show_error [description]
 	 *
 	 */
-	public function html_form_mysql( $show_error_credentials = false ) {
+	public function html_form_database
+	(
+		$show_error = false
+	) {
 		$output = '';
 		$output .= '<tr>' . "\n";
 		$output .= '<td colspan="4">' . "\n";
 
-		if ( $show_error_credentials === true ) {
-			$output .= '<div class="alert alert-error">Credentials invalid.</div>' . "\n";
+		if ( $show_error === true ) {
+			$output .= '<div class="alert alert-error">Database credentials invalid.</div>' . "\n";
 		}
 
 		$output .= '<form class="form-inline" method="post" action="">' . "\n";
-		$output .= '<input type="text" class="input-small" name="credentials[host]" placeholder="localhost" value="localhost">' . "\n";
-		$output .= '<input type="text" class="input-small" name="credentials[user]" placeholder="user">' . "\n";
-		$output .= '<input type="password" class="input-small" name="credentials[password]" placeholder="password">' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-db[host]" placeholder="localhost" value="localhost">' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-db[user]" placeholder="user">' . "\n";
+		$output .= '<input type="password" class="input-small" name="credentials-db[password]" placeholder="password">' . "\n";
 		$output .= '<label class="checkbox">' . "\n";
 		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
 		$output .= '</label>' . "\n";
-		$output .= '<button name="mysql-connection" type="submit" class="btn">Login</button>' . "\n";
-		$output .= '<span class="help-inline">We must connect to the MySQL server to check the configuration</span>' . "\n";
+		$output .= '<button name="database-connection" type="submit" class="btn">Login</button>' . "\n";
+		$output .= '<span class="help-inline">We must connect to the database server (MySQL or MariaDB) to check the configuration</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		echo $output;
+	}
+
+	public function test_form_redis() {
+		$this->html_table_open( 'Redis Configuration', '', '', '' );
+
+		// Test redis Server Version
+		if ( $this->redis_link !== false && class_exists( 'Redis' ) ) {
+			$redis_info = $this->redis_link->info();
+
+			if ( version_compare( $redis_info['redis_version'], $this->redis_version, '>=' ) ) {
+				$this->html_table_row( 'Database Version',
+				                       $this->redis_version,
+				                       '> 5',
+				                       $redis_info['redis_version'],
+				                       'success' );
+			} else {
+				$this->html_table_row( 'Database Version',
+				                       $this->redis_version,
+				                       '> 5',
+				                       $redis_info['redis_version'],
+				                       'error' );
+			}
+
+			try {
+				$this->redis_link->set( 'phpwpinfo', 'yes' );
+				$glueStatus = $this->redis_link->get( 'phpwpinfo' );
+				if ( $glueStatus ) {
+					$testKey = 'phpwpinfo';
+					$output  = "It's OK ! Glued with the Redis key value store:" . PHP_EOL;
+					$output  .= "1. Got value '{$glueStatus}' for key '{$testKey}'." . PHP_EOL;
+					if ( $this->redis_link->delete( 'phpwpinfo' ) ) {
+						$output .= "2. And already removed the key/value pair again." . PHP_EOL;
+					}
+
+					$this->html_table_row( 'Redis self-test',
+					                       $output,
+					                       '',
+					                       '',
+					                       'success',
+					                       3 );
+				} else {
+					$output = "Not glued with the Redis key value store." . PHP_EOL;
+
+					$this->html_table_row( 'Redis self-test',
+					                       $output,
+					                       '',
+					                       '',
+					                       'error',
+					                       3 );
+				}
+			} catch ( RedisException $e ) {
+				$exceptionMessage = $e->getMessage();
+				$output           = "Exception : {$exceptionMessage}. Not glued with the Redis key value store.";
+
+				$this->html_table_row( 'Redis self-test',
+				                       $output,
+				                       '',
+				                       '',
+				                       'error',
+				                       3 );
+			}
+		} else {
+			// Show redis Form
+			$this->html_form_redis( $this->redis_infos === false );
+
+			$this->html_table_row( 'Redis version',
+			                       $this->redis_version,
+			                       '-',
+			                       'Not available, needs redis auth.',
+			                       'warning' );
+		}
+
+		$this->html_table_close();
+	}
+
+	/**
+	 * Form HTML for Redis Auth
+	 *
+	 * @return void                          [description]
+	 *
+	 * @param boolean $show_error [description]
+	 *
+	 */
+	public function html_form_redis( $show_error = false ) {
+		$output = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="4">' . "\n";
+
+		if ( $show_error === true ) {
+			$output .= '<div class="alert alert-error">Redis credentials invalid.</div>' . "\n";
+		}
+
+		$output .= '<form class="form-inline" method="post" action="">' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-redis[host]" placeholder="localhost:6379" value="localhost:6379">' . "\n";
+		$output .= '<input type="password" class="input-small" name="credentials-redis[password]" placeholder="(optional)">' . "\n";
+		$output .= '<label class="checkbox">' . "\n";
+		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
+		$output .= '</label>' . "\n";
+		$output .= '<button name="redis-connection" type="submit" class="btn">Login</button>' . "\n";
+		$output .= '<span class="help-inline">We must connect to the Redis server to check the configuration</span>' . "\n";
 		$output .= '</form>' . "\n";
 		$output .= '</td>' . "\n";
 		$output .= '</tr>' . "\n";
@@ -914,7 +1038,7 @@ class PHP_WP_Info {
 	}
 
 	/**
-	 * Get humans values, take from http://php.net/manual/de/function.filesize.php
+	 * Get humans values, take from https://php.net/manual/de/function.filesize.php
 	 *
 	 * @return string [description]
 	 *
@@ -1016,45 +1140,114 @@ class PHP_WP_Info {
 		return true;
 	}
 
-	private function _check_request_mysql() {
-		// Check GET for logout MySQL
-		if ( isset( $_GET['logout'] ) && $_GET['logout'] === 'true' ) {
+	private function _check_request_redis() {
+		// Check GET for logout-db redis
+		if ( isset( $_GET['logout-redis'] ) && $_GET['logout-redis'] === 'true' ) {
 			// Flush old session if POST submit
-			unset( $_SESSION['credentials'] );
+			unset( $_SESSION['credentials-redis'] );
 
-			header( 'Location: http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+			header( 'Location: ' . $this->get_scheme() . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
 			exit();
 		}
 
-		// Check POST for MySQL login
-		if ( isset( $_POST['mysql-connection'] ) ) {
+		// Check POST for redis login
+		if ( isset( $_POST['redis-connection'] ) ) {
 			// Flush old session if POST submit
-			unset( $_SESSION['credentials'] );
+			unset( $_SESSION['credentials-redis'] );
 
 			// Cleanup form data
-			$this->db_infos = $this->stripslashes_deep( $_POST['credentials'] );
+			$this->redis_infos = $this->stripslashes_deep( $_POST['credentials-redis'] );
 
 			// Check remember checkbox
 			if ( isset( $_POST['remember'] ) ) {
-				$_SESSION['credentials'] = $this->db_infos;
+				$_SESSION['credentials-redis'] = $this->redis_infos;
 			}
-		} elseif ( isset( $_SESSION['credentials'] ) ) {
-			$this->db_infos = $_SESSION['credentials'];
+		} elseif ( isset( $_SESSION['credentials-redis'] ) ) {
+			$this->redis_infos = $_SESSION['credentials-redis'];
 		}
 
-		// Check credentials
+		// Check credentials-redis
+		if ( ! empty( $this->redis_infos ) && is_array( $this->redis_infos ) && class_exists( 'Redis' ) ) {
+			$host_parts         = parse_url( $this->redis_infos['host'] );
+			$host_parts['port'] = ( isset( $host_parts['port'] ) ) ? (int) $host_parts['port'] : 6379;
+
+			$this->redis_link = new Redis();
+
+			try {
+				$result = $this->redis_link->connect( $host_parts['host'], $host_parts['port'] );
+				if ( $result === false ) {
+					$this->redis_link = false;
+				} elseif ( ! empty( $this->db_infos['password'] ) ) {
+					$result = $this->redis_link->auth( $this->db_infos['password'] );
+					if ( $result === false ) {
+						$this->redis_link = false;
+					}
+				}
+			} catch ( RedisException $e ) {
+				error_log( $e->getMessage() );
+				$this->redis_link = false;
+			}
+
+			if ( $this->redis_link === false ) {
+				unset( $_SESSION['credentials-redis'] );
+				$this->redis_infos = false;
+			}
+		}
+
+		// Check GET for redis variables
+		if ( $this->redis_link !== false && isset( $_GET['redis-variables'] ) && $_GET['redis-variables'] === 'true' ) {
+			$redis_info = $this->redis_link->info();
+			if ( empty( $redis_info ) ) {
+				echo 'No result found, nothing to print so am exiting';
+				exit();
+			}
+
+			$this->get_header();
+			echo $this->_variable_to_html( $redis_info );
+			$this->get_footer();
+			exit();
+		}
+	}
+
+	private function _check_request_database() {
+		// Check GET for logout-db database
+		if ( isset( $_GET['logout-db'] ) && $_GET['logout-db'] === 'true' ) {
+			// Flush old session if POST submit
+			unset( $_SESSION['credentials-db'] );
+
+			header( 'Location: ' . $this->get_scheme() . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+			exit();
+		}
+
+		// Check POST for database login
+		if ( isset( $_POST['database-connection'] ) ) {
+			// Flush old session if POST submit
+			unset( $_SESSION['credentials-db'] );
+
+			// Cleanup form data
+			$this->db_infos = $this->stripslashes_deep( $_POST['credentials-db'] );
+
+			// Check remember checkbox
+			if ( isset( $_POST['remember'] ) ) {
+				$_SESSION['credentials-db'] = $this->db_infos;
+			}
+		} elseif ( isset( $_SESSION['credentials-db'] ) ) {
+			$this->db_infos = $_SESSION['credentials-db'];
+		}
+
+		// Check credentials-db
 		if ( ! empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysqli_connect' ) ) {
 			$this->db_link = @mysqli_connect( $this->db_infos['host'],
 			                                  $this->db_infos['user'],
 			                                  $this->db_infos['password'] );
 			if ( $this->db_link === false ) {
-				unset( $_SESSION['credentials'] );
+				unset( $_SESSION['credentials-db'] );
 				$this->db_infos = false;
 			}
 		}
 
-		// Check GET for MYSQL variables
-		if ( $this->db_link !== false && isset( $_GET['mysql-variables'] ) && $_GET['mysql-variables'] === 'true' ) {
+		// Check GET for databse variables
+		if ( $this->db_link !== false && isset( $_GET['database-variables'] ) && $_GET['database-variables'] === 'true' ) {
 			$result = mysqli_query( $this->db_link, 'SHOW VARIABLES' );
 			if ( ! $result ) {
 				echo "Could not successfully run query ( 'SHOW VARIABLES' ) from DB: " . mysqli_error( $this->db_link );
@@ -1084,7 +1277,7 @@ class PHP_WP_Info {
 			if ( ! empty( $code ) ) {
 				$result = file_put_contents( __DIR__ . '/adminer.php', $code );
 				if ( $result !== false ) {
-					header( 'Location: http://' . $_SERVER['SERVER_NAME'] . '/adminer.php', true );
+					header( 'Location: ' . $this->get_scheme() . $_SERVER['SERVER_NAME'] . '/adminer.php', true );
 					exit();
 				}
 			}
@@ -1097,7 +1290,8 @@ class PHP_WP_Info {
 			if ( is_file( __DIR__ . '/adminer.php' ) ) {
 				$result = unlink( __DIR__ . '/adminer.php' );
 				if ( $result !== false ) {
-					header( 'Location: http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+					header( 'Location: ' . $this->get_scheme() . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'],
+					        true );
 					exit();
 				}
 			}
@@ -1140,7 +1334,8 @@ class PHP_WP_Info {
 			if ( is_dir( __DIR__ . '/wordpress' ) ) {
 				$result = $this->rrmdir( __DIR__ . '/wordpress' );
 				if ( $result !== false ) {
-					header( 'Location: http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'], true );
+					header( 'Location: ' . $this->get_scheme() . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'],
+					        true );
 					exit();
 				}
 			}
@@ -1181,6 +1376,14 @@ class PHP_WP_Info {
 		}
 
 		return false;
+	}
+
+	private function get_scheme() {
+		if ( ( ! empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || (int) $_SERVER['SERVER_PORT'] === 443 ) {
+			return 'https://';
+		}
+
+		return 'http://';
 	}
 }
 

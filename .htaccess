@@ -1,3 +1,14 @@
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^phpwpinfo\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /phpwpinfo.php [L]
+</IfModule>
+# END WordPress
+
 # BEGIN PHP WordPress Info
 <IfModule mod_env.c>
 	SetEnv http_mod_env on
