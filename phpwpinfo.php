@@ -853,7 +853,7 @@ class PHP_WP_Info {
 					$testKey = 'phpwpinfo';
 					$output  = "It's OK ! Glued with the Redis key value store:" . PHP_EOL;
 					$output  .= "1. Got value '{$glueStatus}' for key '{$testKey}'." . PHP_EOL;
-					if ( $this->redis_link->delete( 'phpwpinfo' ) ) {
+					if ( $this->redis_link->del( 'phpwpinfo' ) ) {
 						$output .= "2. And already removed the key/value pair again." . PHP_EOL;
 					}
 
