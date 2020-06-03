@@ -98,6 +98,7 @@ class PHP_WP_Info {
 		$this->test_apache_modules();
 		$this->test_form_mail();
 		$this->test_form_redis();
+		$this->test_form_connectivity();
 
 		$this->get_footer();
 	}
@@ -825,6 +826,76 @@ class PHP_WP_Info {
 		echo $output;
 	}
 
+	public function test_form_connectivity() {
+		$this->html_table_open( 'Connectivity tests', '', '', '' );
+
+		if ( isset( $_POST['test-connectivity'] ) ) {
+			$result = $this->check_connectivity_http( 'api.wordpress.org', 80, '/core/version-check/1.7/' );
+			$this->html_table_row(
+				'Test HTTP on api.wordpress.org',
+				( $result === true ? 'OK' : 'KO' ),
+				'',
+				'',
+				( $result === true ? 'success' : 'error' ),
+				3
+			);
+
+			$result = $this->check_connectivity_http( 'api.wordpress.org', 443, '/core/version-check/1.7/' );
+			$this->html_table_row(
+				'Test HTTPS on api.wordpress.org',
+				( $result === true ? 'OK' : 'KO' ),
+				'',
+				'',
+				( $result === true ? 'success' : 'error' ),
+				3
+			);
+
+			$result = $this->check_connectivity_ssh( 'github.com' );
+			$this->html_table_row(
+				'Test SSH on github.com',
+				( $result === true ? 'OK' : 'KO' ),
+				'',
+				'',
+				( $result === true ? 'success' : 'error' ),
+				3
+			);
+
+			$result = $this->check_connectivity_ssh( 'bitbucket.org' );
+			$this->html_table_row(
+				'Test SSH on bitbucket.org',
+				( $result === true ? 'OK' : 'KO' ),
+				'',
+				'',
+				( $result === true ? 'success' : 'error' ),
+				3
+			);
+
+			$result = $this->check_connectivity_ssh( 'gitlab.com' );
+			$this->html_table_row(
+				'Test SSH on gitlab.com',
+				( $result === true ? 'OK' : 'KO' ),
+				'',
+				'',
+				( $result === true ? 'success' : 'error' ),
+				3
+			);
+		}
+
+		$output = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="3">' . "\n";
+		$output .= '<form id="form-connectivity" class="form-inline" method="post" action="#form-connectivity">' . "\n";
+		$output .= '<button name="test-connectivity" type="submit" class="btn">Launch tests</button>' . "\n";
+		$output .= '<span class="help-inline">Check if server can access to internet via web and SSH</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		echo $output;
+
+		$this->html_table_close();
+	}
+
 	public function test_form_redis() {
 		$this->html_table_open( 'Redis Configuration', '', '', '' );
 
@@ -915,7 +986,7 @@ class PHP_WP_Info {
 			$output .= '<div class="alert alert-error">Redis credentials invalid.</div>' . "\n";
 		}
 
-		$output .= '<form class="form-inline" method="post" action="">' . "\n";
+		$output .= '<form id="form-redis" class="form-inline" method="post" action="#form-redis" >' . "\n";
 		$output .= '<input type="text" class="input-small" name="credentials-redis[host]" placeholder="localhost:6379" value="localhost:6379">' . "\n";
 		$output .= '<input type="password" class="input-small" name="credentials-redis[password]" placeholder="(optional)">' . "\n";
 		$output .= '<label class="checkbox">' . "\n";
@@ -1384,6 +1455,61 @@ class PHP_WP_Info {
 		}
 
 		return 'http://';
+	}
+
+	/**
+	 * @return mixed
+	 *
+	 * @param int $port
+	 * @param string $path
+	 * @param string $host
+	 *
+	 * @see : https://incarnate.github.io/curl-to-php/
+	 */
+	private function check_connectivity_http( $host = "api.wordpress.org", $port = 80, $path = '/' ) {
+		$scheme = ( $port === 80 ) ? 'http://' : 'https://';
+
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $scheme . $host . $path );
+		curl_setopt( $ch, CURLOPT_FILETIME, true );
+		curl_setopt( $ch, CURLOPT_NOBODY, true );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $ch, CURLOPT_HEADER, true );
+
+		$result = curl_exec( $ch );
+		//$info   = curl_getinfo( $ch );
+
+		if ( curl_errno( $ch ) ) {
+			//$result = 'Error:' . curl_error( $ch );
+			return false;
+		}
+
+		$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+
+		return ! ( $http_code > 204 );
+	}
+
+	/**
+	 * @return bool
+	 *
+	 * @param int $port
+	 * @param string $host
+	 *
+	 * @see : https://www.linuxquestions.org/questions/linux-server-73/ssh-connections-with-php-926003/
+	 */
+	private function check_connectivity_ssh( $host = "github.com", $port = 22 ) {
+		try {
+			$fp = fsockopen( $host, $port, $errno, $errstr, 5 );
+			if ( ! $fp ) {
+				return false;
+			}
+
+			fclose( $fp );
+
+			return true;
+		} catch ( Exception $e ) {
+			return false;
+		}
 	}
 }
 
