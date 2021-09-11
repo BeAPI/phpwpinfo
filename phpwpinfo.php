@@ -444,6 +444,9 @@ class PHP_WP_Info {
 		$value = ini_get( 'output_handler' );
 		$this->html_table_row( 'output_handler', $value, '', '', 'info', 3 );
 
+		$value = ini_get( 'disable_functions' );
+		$this->html_table_row( 'disable_functions', $value, '', '', 'info', 3 );
+
 		$value = ini_get( 'expose_php' );
 		if ( $value === '0' || strtolower( $value ) === 'off' || empty( $value ) ) {
 			$this->html_table_row( 'expose_php', '-', '0 or Off', $value, 'success' );
@@ -658,7 +661,7 @@ class PHP_WP_Info {
 		// Adminer
 		if ( ! is_file( __DIR__ . '/adminer.php' ) && is_writable( __DIR__ ) ) {
 			$output .= '<li><a href="?adminer=install">Install Adminer</a></li>' . "\n";
-		} else {
+		} elseif ( is_file( __DIR__ . '/adminer.php' ) ) {
 			$output .= '<li><a href="adminer.php">Adminer</a></li>' . "\n";
 			$output .= '<li><a href="?adminer=uninstall">Uninstall Adminer</a></li>' . "\n";
 		}
@@ -666,7 +669,7 @@ class PHP_WP_Info {
 		// WordPress
 		if ( ! is_dir( __DIR__ . '/wordpress' ) && is_writable( __DIR__ ) && class_exists( 'ZipArchive' ) ) {
 			$output .= '<li><a href="?wordpress=install">Download & Extract WordPress</a></li>' . "\n";
-		} else {
+		} elseif ( is_dir( __DIR__ . '/wordpress' ) ) {
 			$output .= '<li><a href="wordpress/">WordPress</a></li>' . "\n";
 			$output .= '<li><a href="?wordpress=uninstall">Uninstall WordPress</a></li>' . "\n";
 		}
@@ -1424,6 +1427,10 @@ class PHP_WP_Info {
 	 * @param string $command The command to check
 	 */
 	private function _command_exists( $command ) {
+		if ( ! function_exists( 'proc_open' ) ) {
+			return false;
+		}
+
 		$whereIsCommand = ( PHP_OS === 'WINNT' ) ? 'where' : 'which';
 
 		$process = proc_open(
@@ -1467,6 +1474,10 @@ class PHP_WP_Info {
 	 * @see : https://incarnate.github.io/curl-to-php/
 	 */
 	private function check_connectivity_http( $host = "api.wordpress.org", $port = 80, $path = '/' ) {
+		if ( ! function_exists( 'curl_init' ) ) {
+			return false;
+		}
+
 		$scheme = ( $port === 80 ) ? 'http://' : 'https://';
 
 		$ch = curl_init();
