@@ -367,6 +367,13 @@ class PHP_WP_Info {
 	public function test_php_config() {
 		$this->html_table_open( 'PHP Configuration', '', 'Required', 'Recommended', 'Current' );
 
+		$value = date_default_timezone_get();
+		if ( empty( $value ) ) {
+			$this->html_table_row( 'date_default_timezone ', '-', '-', 'Not empty value', 'warning' );
+		} else {
+			$this->html_table_row( 'date_default_timezone ', '-', '-', $value, 'info' );
+		}
+
 		$value = ini_get( 'register_argc_argv ' );
 		if ( strtolower( $value ) === 'on' ) {
 			$this->html_table_row( 'register_argc_argv ', '-', 'Off', 'On', 'warning' );
