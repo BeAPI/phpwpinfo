@@ -216,6 +216,7 @@ class PHP_WP_Info {
 			'iconv'     => 'error',
 			'xmlreader' => 'error',
 			'xml'       => 'error',
+			'intl'      => 'error',
 			'suhosin'   => 'info',
 			'memcache'  => 'info',
 			'memcached' => 'info',
