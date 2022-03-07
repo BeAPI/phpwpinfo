@@ -631,7 +631,7 @@ class PHP_WP_Info {
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHPWPInfo</title>' . "\n";
 		$output .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">' . "\n";
-		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px; margin-bottom: 20px;}</style>' . "\n";
+		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .table tbody tr td{word-break: break-all;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px; margin-bottom: 20px;}</style>' . "\n";
 		$output .= '</head>' . "\n";
 		$output .= '<body style="padding:10px 0;">' . "\n";
 		$output .= '<div class="container">' . "\n";
