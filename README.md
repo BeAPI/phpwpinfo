@@ -11,6 +11,18 @@ It is written in full PHP and use Bootstrap for HTML/CSS/JS purpose, provided by
 
 ## Installation
 
+> **Note**
+> 
+> You'll need the .htaccess file included for the PHP-FPM/FastCGI implementations
+
+### Total
+
+Just run :
+
+```git clone https://github.com/BeAPI/phpwpinfo.git```
+
+### Partial
+
 Talking about the main file ([phpwpinfo.php](https://github.com/BeAPI/phpwpinfo/blob/master/phpwpinfo.php)), copy it's content, download the [raw](https://raw.githubusercontent.com/BeAPI/phpwpinfo/master/phpwpinfo.php) file or even better "wget" it directly on your server :
 
 ```wget https://raw.githubusercontent.com/BeAPI/phpwpinfo/master/phpwpinfo.php```
