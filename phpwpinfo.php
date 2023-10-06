@@ -1,11 +1,11 @@
 <?php /** @noinspection NotOptimalIfConditionsInspection */
 
 /*
-Version 1.4.3
+Version 1.5.0
 Copyright 2012-2020 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, version 2, as 
+it under the terms of the GNU General Public License, version 2, as
 published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
@@ -17,8 +17,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+1.5.0:
+	[X] ADD: Favicon
+	[X] ADD: WordPress Handbook link
+	[X] UPDATE: Required version and modules
+
 TODO:
-	Favicon
+	[ ] Delete deprecated
 */
 
 // Suppress DateTime warnings
@@ -45,8 +50,8 @@ function phpwpinfo() {
 class PHP_WP_Info {
 
 	private $debug_mode = true;
-	private $php_version = '5.6.20';
-	private $mysql_version = '5.0'; // TODO: Min MariaDB version ?
+	private $php_version = '≥7.4';
+	private $mysql_version = '8.0'; // TODO: Min MariaDB version ?
 	private $curl_version = '7.38';
 	private $redis_version = '3.0'; // TODO: Check vs plugin ?
 
@@ -209,25 +214,40 @@ class PHP_WP_Info {
 		$this->html_table_open( 'PHP Extensions', '', 'Required', 'Recommended', 'Current' );
 
 		$extensions = array(
-			'pcre'      => 'error',
+			// Higly recommanded
+			'json'      => 'error',
 			'curl'      => 'error',
-			'zlib'      => 'error',
-			'mbstring'  => 'error',
-			'iconv'     => 'error',
-			'xmlreader' => 'error',
-			'xml'       => 'error',
-			'intl'      => 'error',
-			'suhosin'   => 'info',
-			'memcache'  => 'info',
-			'memcached' => 'info',
-			'redis'     => 'info',
-			'tidy'      => 'info',
-			'zip'       => 'info',
-			'ftp'       => 'info',
+			'dom'       => 'error',
 			'exif'      => 'info',
-			'xdebug'    => 'info',
-			'newrelic'  => 'info',
+			'fileinfo'  => 'info',
+			'igbinary'  => 'info',
+			'intl'      => 'error',
+			'mbstring'  => 'error',
+			'openssl'   => 'error',
+			'pcre'      => 'error',
+			'zlib'      => 'error',
+			'iconv'     => 'error',
+			'xml'       => 'error',
+			'zip'       => 'info',
+			// Optional
+			'xmlreader' => 'error',		// TO DELETE? (Not in handbook)
+			// Cache
+			'apcu'      => 'info',
+			'memcache'  => 'info',		// TO DELETE? (Not in handbook)
+			'memcached' => 'info',
+			'opcache'   => 'info',
+			'redis'     => 'info',
+			// Others
+			'ftp'       => 'info',
+			'ssh2'      => 'info',
+			'sockets'   => 'info',
+			// Debug
 			'blackfire' => 'info',
+			'newrelic'  => 'info',
+			'xdebug'    => 'info',
+			// Deprecated ?
+			'suhosin'   => 'info',		// TO DELETE? (Not in handbook + Deprecated)
+			'tidy'      => 'info',		// TO DELETE? (Not in handbook)
 		);
 
 		foreach ( $extensions as $extension => $status ) {
@@ -630,6 +650,7 @@ class PHP_WP_Info {
 		$output .= '<meta charset="utf-8">' . "\n";
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHPWPInfo</title>' . "\n";
+		$output .= '<link rel="icon" href="favicon.ico" sizes="32x32">' . "\n";
 		$output .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">' . "\n";
 		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .table tbody tr td{word-break: break-all;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px; margin-bottom: 20px;}</style>' . "\n";
 		$output .= '</head>' . "\n";
@@ -639,7 +660,8 @@ class PHP_WP_Info {
 		$output .= '<div class="navbar-inner">' . "\n";
 		$output .= '<a class="brand" href="#">PHP WordPress Info</a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
-		$output .= '<li><a href="https://github.com/BeAPI/phpwpinfo">Project on Github</a></li>' . "\n";
+		$output .= '<li><a href="https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions" target="_blank">WordPress Handbook</a></li>' . "\n";
+		$output .= '<li><a href="https://github.com/BeAPI/phpwpinfo" target="_blank">Project on Github</a></li>' . "\n";
 
 		if ( $this->db_link !== false ) {
 			$output .= '<li class="dropdown">' . "\n";
