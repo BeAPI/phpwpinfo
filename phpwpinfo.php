@@ -235,7 +235,6 @@ class PHP_WP_Info {
 			'apcu'      => 'info',
 			'memcache'  => 'info',		// TO DELETE? (Not in handbook)
 			'memcached' => 'info',
-			'opcache'   => 'info',
 			'redis'     => 'info',
 			// Others
 			'ftp'       => 'info',
