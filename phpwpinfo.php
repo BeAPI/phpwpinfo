@@ -1,8 +1,6 @@
-<?php /** @noinspection NotOptimalIfConditionsInspection */
-
+<?php
 /*
-Version 1.5.0
-Copyright 2012-2020 - Amaury Balmer (amaury@beapi.fr)
+Copyright 2012-2024 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -16,9 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-1.5.0:
-
 
 TODO:
 	[ ] Delete deprecated
@@ -1042,12 +1037,25 @@ class PHP_WP_Info {
 		$output .= '<td colspan="3">' . "\n";
 
 		if ( isset( $_POST['test-email'], $_POST['mail'] ) ) {
-			if ( ! filter_var( $_POST['mail'], FILTER_VALIDATE_EMAIL ) ) {// Invalid
+			if ( ! filter_var( $_POST['mail'], FILTER_VALIDATE_EMAIL ) ) { // Invalid
 				$output .= '<div class="alert alert-error">Email invalid.</div>' . "\n";
 			} else {// Valid mail
-				$mresult = mail( $_POST['mail'],
-				                 'Email test with PHP WP Info',
-				                 "Line 1\nLine 2\nLine 3\nGreat !" );
+				$subject            = 'Email test with PHP WP Info';
+				$message            = "Line 1\nLine 2\nLine 3\nGreat !";
+				$additional_headers = '';
+				$headers            = 'X-Mailer: PHP/' . phpversion();
+
+				if ( isset( $_POST['mail_from'] ) && filter_var( $_POST['mail_from'], FILTER_VALIDATE_EMAIL ) ) {
+					$headers .= "\r\n" . 'From: ' . $_POST['mail_from'] . "\r\n" .
+					            'Reply-To: ' . $_POST['mail_from'];
+
+					if ( isset( $_POST['mail_returnpath'] ) && '1' === $_POST['mail_returnpath'] ) {
+						$headers            .= "\r\n" . 'Return-Path: ' . $_POST['mail_from'];
+						$additional_headers = '-f ' . $_POST['mail_from'];
+					}
+				}
+
+				$mresult = mail( $_POST['mail'], $subject, $message, $headers, $additional_headers );
 				if ( $mresult ) {// Valid send
 					$output .= '<div class="alert alert-success">Mail sent with success.</div>' . "\n";
 				} else {// Error send
@@ -1057,9 +1065,11 @@ class PHP_WP_Info {
 		}
 
 		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
-		$output .= '<i class="icon-envelope"></i> <input type="email" class="input-large" name="mail" placeholder="test@sample.com" value="">' . "\n";
-		$output .= '<button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
-		$output .= '<span class="help-inline">Send a test email to check that server is doing its job</span>' . "\n";
+		$output .= ' <i class="icon-envelope"></i> <input type="email" class="input-large" name="mail" placeholder="recipient@sample.com" value="">' . "\n";
+		$output .= ' <i class="icon-user"></i> <input type="email" class="input-large" name="mail_from" placeholder="mailfrom@sample.com" value="">' . "\n";
+		$output .= ' <i class="icon-user"></i> <label class="checkbox"><input type="checkbox" class="input-large" name="mail_returnpath" value="1"> Force Return-Path (only if mail from is set)</label>' . "\n";
+		$output .= ' <button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
+		$output .= ' <span class="help-inline">Send a test e-mail to check that the server is doing its job. You can leave the “mailfrom” field blank to let the server configuration “do its thing”.</span>' . "\n";
 		$output .= '</form>' . "\n";
 		$output .= '</td>' . "\n";
 		$output .= '</tr>' . "\n";
@@ -1070,10 +1080,9 @@ class PHP_WP_Info {
 	/**
 	 * Stripslashes array
 	 *
-	 * @return array|string [type]        [description]
+	 * @param $value
 	 *
-	 * @param  [type] $value [description]
-	 *
+	 * @return array|string
 	 */
 	public function stripslashes_deep( $value ) {
 		return is_array( $value ) ? array_map( array( &$this, 'stripslashes_deep' ), $value ) : stripslashes( $value );

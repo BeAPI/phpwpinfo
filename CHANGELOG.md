@@ -4,6 +4,7 @@
 
 - Better handle error management for mysql test connexion
 - Improve check with -1 value on PHP conf
+- Improve form for mail checker (allow to customize mailfrom and fix a return-path)
 
 ## 1.5.0
 
