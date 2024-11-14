@@ -18,9 +18,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 1.5.0:
-	[X] ADD: Favicon
-	[X] ADD: WordPress Handbook link
-	[X] UPDATE: Required version and modules
+
 
 TODO:
 	[ ] Delete deprecated
@@ -49,7 +47,7 @@ function phpwpinfo() {
 
 class PHP_WP_Info {
 
-	private $debug_mode = true;
+	private bool $debug_mode = true;
 	private $php_version = '≥7.4';
 	private $mysql_version = '8.0'; // TODO: Min MariaDB version ?
 	private $curl_version = '7.38';
@@ -401,10 +399,10 @@ class PHP_WP_Info {
 		}
 
 		$value = $this->return_bytes( ini_get( 'memory_limit' ) );
-		if ( (int) $value < $this->return_bytes( '64M' ) ) {
+		if ( $value !== '-1' && (int) $value < $this->return_bytes( '64M' ) ) {
 			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes( $value ), 'error' );
 		} else {
-			$status = ( (int) $value >= $this->return_bytes( '256M' ) ) ? 'success' : 'warning';
+			$status = ( (int) $value >= $this->return_bytes( '256M' ) || $value === '-1' ) ? 'success' : 'warning';
 			$this->html_table_row( 'memory_limit', '64 MB', '256 MB', $this->_format_bytes( $value ), $status );
 		}
 
@@ -417,18 +415,18 @@ class PHP_WP_Info {
 		}
 
 		$value = ini_get( 'max_execution_time' );
-		if ( (int) $value < 60 ) {
+		if ( $value !== '-1' && (int) $value < 60 ) {
 			$this->html_table_row( 'max_execution_time', '-', '300', $value, 'error' );
 		} else {
-			$status = ( (int) $value >= 300 ) ? 'success' : 'warning';
+			$status = ( (int) $value >= 300 || $value === '-1' ) ? 'success' : 'warning';
 			$this->html_table_row( 'max_execution_time', '-', '300', $value, $status );
 		}
 
 		$value = ini_get( 'max_input_time' );
-		if ( (int) $value < 60 ) {
+		if ( $value !== '-1' && (int) $value < 60 ) {
 			$this->html_table_row( 'max_input_time', '-', '300', $value, 'error' );
 		} else {
-			$status = ( (int) $value >= 300 ) ? 'success' : 'warning';
+			$status = ( (int) $value >= 300 || $value === '-1' ) ? 'success' : 'warning';
 			$this->html_table_row( 'max_input_time', '-', '300', $value, $status );
 		}
 
@@ -1105,7 +1103,7 @@ class PHP_WP_Info {
 	/**
 	 * Method for get apaches modules with Apache modules or CGI with .HTACCESS
 	 *
-	 * @return string        [description]
+	 * @return array        [description]
 	 */
 	private function _get_apache_modules() {
 		$apache_modules = ( is_callable( 'apache_get_modules' ) ? apache_get_modules() : false );
@@ -1340,10 +1338,12 @@ class PHP_WP_Info {
 
 		// Check credentials-db
 		if ( ! empty( $this->db_infos ) && is_array( $this->db_infos ) && is_callable( 'mysqli_connect' ) ) {
-			$this->db_link = @mysqli_connect( $this->db_infos['host'],
-			                                  $this->db_infos['user'],
-			                                  $this->db_infos['password'] );
-			if ( $this->db_link === false ) {
+			try {
+				$this->db_link = mysqli_connect( $this->db_infos['host'],
+					$this->db_infos['user'],
+					$this->db_infos['password'] );
+			} catch ( Exception $e ) {
+				$error = $e->getMessage();
 				unset( $_SESSION['credentials-db'] );
 				$this->db_infos = false;
 			}
