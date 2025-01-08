@@ -1,6 +1,6 @@
 <?php
 /*
-Copyright 2012-2024 - Amaury Balmer (amaury@beapi.fr)
+Copyright 2012-2025 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as

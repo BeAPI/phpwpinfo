@@ -1,8 +1,12 @@
 # Changelog ##
 
+## 1.6.1
+
+- Better handle error management for Redis test connexion
+
 ## 1.6.0
 
-- Better handle error management for mysql test connexion
+- Better handle error management for MySQL test connexion
 - Improve check with -1 value on PHP conf
 - Improve form for mail checker (allow to customize mailfrom and fix a return-path)
 
