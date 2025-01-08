@@ -1008,7 +1008,12 @@ class PHP_WP_Info {
 		$output .= '<td colspan="4">' . "\n";
 
 		if ( $show_error === true ) {
-			$output .= '<div class="alert alert-error">Redis credentials invalid.</div>' . "\n";
+			$output .= '<div class="alert alert-error">Redis credentials invalid.';
+			if ( isset( $_SESSION['redis-error-message'] ) ) {
+				$output .= ' (' . $_SESSION['redis-error-message'] . ')';
+			}
+
+			$output .= '</div>' . "\n";
 		}
 
 		$output .= '<form id="form-redis" class="form-inline" method="post" action="#form-redis" >' . "\n";
@@ -1263,7 +1268,7 @@ class PHP_WP_Info {
 		// Check POST for redis login
 		if ( isset( $_POST['redis-connection'] ) ) {
 			// Flush old session if POST submit
-			unset( $_SESSION['credentials-redis'] );
+			unset( $_SESSION['credentials-redis'], $_SESSION['redis-error-message'] );
 
 			// Cleanup form data
 			$this->redis_infos = $this->stripslashes_deep( $_POST['credentials-redis'] );
@@ -1281,21 +1286,22 @@ class PHP_WP_Info {
 			$host_parts         = parse_url( $this->redis_infos['host'] );
 			$host_parts['port'] = ( isset( $host_parts['port'] ) ) ? (int) $host_parts['port'] : 6379;
 
-			$this->redis_link = new Redis();
+			$redis_args = [
+				'host'           => $host_parts['host'],
+				'port'           => $host_parts['port'],
+				'connectTimeout' => 5,
+			];
+
+			if ( ! empty( $this->redis_infos['password'] ) ) {
+				$redis_args['auth'] = $this->redis_infos['password'];
+			}
 
 			try {
-				$result = $this->redis_link->connect( $host_parts['host'], $host_parts['port'] );
-				if ( $result === false ) {
-					$this->redis_link = false;
-				} elseif ( ! empty( $this->db_infos['password'] ) ) {
-					$result = $this->redis_link->auth( $this->db_infos['password'] );
-					if ( $result === false ) {
-						$this->redis_link = false;
-					}
-				}
+				$this->redis_link = new Redis( $redis_args );
+				$this->redis_link->ping();
 			} catch ( RedisException $e ) {
-				error_log( $e->getMessage() );
-				$this->redis_link = false;
+				$_SESSION['redis-error-message'] = $e->getMessage();
+				$this->redis_link                = false;
 			}
 
 			if ( $this->redis_link === false ) {
