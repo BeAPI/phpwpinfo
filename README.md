@@ -1,4 +1,4 @@
-<a href="https://beapi.fr">![Be API Github Banner](.github/banner-github.png)</a>
+<img src="https://github.com/BeAPI/phpwpinfo/raw/master/.github/phpwpinfo.png" width="200">
 
 # phpwpinfo
 
@@ -68,6 +68,8 @@ Please refer to the [contributing guidelines](.github/CONTRIBUTING.md) to increa
 If you identify any errors or have an idea for improving this tool, feel free to open an [issue](../../issues/new). Please provide as much info as needed in order to help us resolving / approve your request.
 
 # Who ?
+
+<a href="https://beapi.fr">![Be API Github Banner](.github/banner-github.png)</a>
 
 Created by [Be API](https://beapi.fr), the French WordPress leader agency since 2009. Based in Paris, we are more than 30 people and always [hiring](https://beapi.workable.com) some fun and talented guys. So we will be pleased to work with you.
 
