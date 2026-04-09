@@ -582,6 +582,44 @@ class PHP_WP_Info {
 	}
 
 	/**
+	 * SQL query cache was removed in MySQL 8.0+ and MariaDB 10.5.2+.
+	 *
+	 * @return bool
+	 */
+	private function _db_supports_sql_query_cache() {
+		if ( $this->db_link === false || ! is_callable( 'mysqli_get_server_version' ) ) {
+			return false;
+		}
+		$version_int = mysqli_get_server_version( $this->db_link );
+		if ( ! is_int( $version_int ) || $version_int <= 0 ) {
+			return false;
+		}
+		$major = intdiv( $version_int, 10000 );
+		$minor = intdiv( $version_int % 10000, 100 );
+		$patch = $version_int % 100;
+
+		$server_info = is_callable( 'mysqli_get_server_info' ) ? mysqli_get_server_info( $this->db_link ) : '';
+		$is_mariadb  = is_string( $server_info ) && stripos( $server_info, 'mariadb' ) !== false;
+		// MariaDB 10.x+ uses the same numeric encoding; MySQL never shipped 10.x.
+		if ( ! $is_mariadb && $major >= 10 ) {
+			$is_mariadb = true;
+		}
+
+		if ( $is_mariadb ) {
+			if ( $major > 10 ) {
+				return false;
+			}
+			if ( $major === 10 && ( $minor > 5 || ( $minor === 5 && $patch >= 2 ) ) ) {
+				return false;
+			}
+
+			return true;
+		}
+
+		return $major < 8;
+	}
+
+	/**
 	 * @return void
 	 */
 	public function test_database_config() {
@@ -591,60 +629,62 @@ class PHP_WP_Info {
 
 		$this->html_table_open( 'Database Configuration', '', 'Required', 'Recommended', 'Current' );
 
-		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'have_query_cache'" );
-		if ( $result !== false ) {
-			while ( $row = mysqli_fetch_assoc( $result ) ) {
-				if ( strtolower( $row['Value'] ) === 'yes' ) {
-					$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'error' );
-				} else {
-					$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'success' );
+		if ( $this->_db_supports_sql_query_cache() ) {
+			$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'have_query_cache'" );
+			if ( $result !== false ) {
+				while ( $row = mysqli_fetch_assoc( $result ) ) {
+					if ( strtolower( $row['Value'] ) === 'yes' ) {
+						$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'error' );
+					} else {
+						$this->html_table_row( 'Query cache', '-', 'False', $row['Value'], 'success' );
+					}
 				}
 			}
-		}
 
-		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_size'" );
-		if ( $result !== false ) {
-			while ( $row = mysqli_fetch_assoc( $result ) ) {
-				if ( (int) $row['Value'] >= $this->return_bytes( '8M' ) ) {
-					$status = ( (int) $row['Value'] >= $this->return_bytes( '64M' ) ) ? 'success' : 'warning';
-					$this->html_table_row(
-						'Query cache size',
-						'8M',
-						'64MB',
-						$this->_format_bytes( (int) $row['Value'] ),
-						$status
-					);
-				} else {
-					$this->html_table_row(
-						'Query cache size',
-						'8M',
-						'64MB',
-						$this->_format_bytes( (int) $row['Value'] ),
-						'error'
-					);
+			$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_size'" );
+			if ( $result !== false ) {
+				while ( $row = mysqli_fetch_assoc( $result ) ) {
+					if ( (int) $row['Value'] >= $this->return_bytes( '8M' ) ) {
+						$status = ( (int) $row['Value'] >= $this->return_bytes( '64M' ) ) ? 'success' : 'warning';
+						$this->html_table_row(
+							'Query cache size',
+							'8M',
+							'64MB',
+							$this->_format_bytes( (int) $row['Value'] ),
+							$status
+						);
+					} else {
+						$this->html_table_row(
+							'Query cache size',
+							'8M',
+							'64MB',
+							$this->_format_bytes( (int) $row['Value'] ),
+							'error'
+						);
+					}
 				}
 			}
-		}
 
-		$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_type'" );
-		if ( $result !== false ) {
-			while ( $row = mysqli_fetch_assoc( $result ) ) {
-				if ( strtolower( $row['Value'] ) === 'on' || strtolower( $row['Value'] ) === '1' ) {
-					$this->html_table_row(
-						'Query cache type',
-						'0 or off',
-						'1 or on',
-						strtolower( $row['Value'] ),
-						'error'
-					);
-				} else {
-					$this->html_table_row(
-						'Query cache type',
-						'0',
-						$row['Value'],
-						strtolower( $row['Value'] ),
-						'success'
-					);
+			$result = mysqli_query( $this->db_link, "SHOW VARIABLES LIKE 'query_cache_type'" );
+			if ( $result !== false ) {
+				while ( $row = mysqli_fetch_assoc( $result ) ) {
+					if ( strtolower( $row['Value'] ) === 'on' || strtolower( $row['Value'] ) === '1' ) {
+						$this->html_table_row(
+							'Query cache type',
+							'0 or off',
+							'1 or on',
+							strtolower( $row['Value'] ),
+							'error'
+						);
+					} else {
+						$this->html_table_row(
+							'Query cache type',
+							'0',
+							$row['Value'],
+							strtolower( $row['Value'] ),
+							'success'
+						);
+					}
 				}
 			}
 		}
