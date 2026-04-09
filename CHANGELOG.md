@@ -2,6 +2,7 @@
 
 ## 1.6.2
 
+- Fix fatal `RedisException: NOAUTH Authentication required` on `session_start()` when PHP is configured with Redis sessions but `session.save_path` does not include Redis credentials: force file-based sessions for this script only (keeps form credentials in server-side storage). See [#36](https://github.com/BeAPI/phpwpinfo/issues/36).
 - Remove third-party CDN assets (Bootstrap CSS/JS, jQuery); ship minimal inline CSS and vanilla JS for navigation dropdowns
 - Resolve public IP via in-page `fetch()` to api.ipify.org (replaces JSONP); document CSP / `connect-src` limitations in the UI when the call fails
 - Fix dropdown menus clipped by the header (`overflow` / clearfix on the navbar container)
