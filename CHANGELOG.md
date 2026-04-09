@@ -1,5 +1,11 @@
 # Changelog ##
 
+## 1.6.2
+
+- Remove third-party CDN assets (Bootstrap CSS/JS, jQuery); ship minimal inline CSS and vanilla JS for navigation dropdowns
+- Resolve public IP via in-page `fetch()` to api.ipify.org (replaces JSONP); document CSP / `connect-src` limitations in the UI when the call fails
+- Fix dropdown menus clipped by the header (`overflow` / clearfix on the navbar container)
+
 ## 1.6.1
 
 - Better handle error management for Redis test connexion
