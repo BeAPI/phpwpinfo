@@ -200,7 +200,13 @@ class PHP_WP_Info {
 			                       'info' );
 		}
 
-		$this->html_table_row( 'Real remote IP via AJAX call', '', '', '... js loading ...', 'warning realip' );
+		$this->html_table_row(
+			'Public IP via browser fetch (api.ipify.org). May not work if Content-Security-Policy blocks connect-src to that host.',
+			'',
+			'',
+			'Loading…',
+			'warning realip'
+		);
 	}
 
 	public function test_php_extensions() {
@@ -629,8 +635,7 @@ class PHP_WP_Info {
 	}
 
 	/**
-	 * Start HTML, call CSS/JS from CDN
-	 * Link to Github
+	 * Start HTML with inline CSS (no external stylesheets).
 	 * TODO: Add links to Codex/WP.org
 	 * TODO: Add colors legend
 	 */
@@ -643,8 +648,54 @@ class PHP_WP_Info {
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
 		$output .= '<title>PHPWPInfo</title>' . "\n";
 		$output .= '<link rel="icon" href="favicon.ico" sizes="32x32">' . "\n";
-		$output .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">' . "\n";
-		$output .= '<style>.table tbody tr.warning td{background-color:#FCF8E3;} .table tbody tr td{word-break: break-all;} .description{margin:-10px 0 20px 0;} caption{font-weight: 700;font-size: 18px; margin-bottom: 20px;}</style>' . "\n";
+		$output .= '<style>' . "\n";
+		$output .= <<<'CSS'
+body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;color:#333;background:#fff;}
+a{color:#08c;text-decoration:none;}
+a:hover{color:#005580;text-decoration:underline;}
+.container{width:940px;margin:0 auto;max-width:100%;padding:0 20px;box-sizing:border-box;}
+.navbar{margin-bottom:20px;overflow:visible;}
+.navbar-inner{min-height:40px;padding:10px 20px;background:#f8f8f8;border:1px solid #d4d4d4;border-radius:4px;overflow:visible;}
+.navbar-inner:before,.navbar-inner:after{display:table;content:"";line-height:0;}
+.navbar-inner:after{clear:both;}
+.navbar .brand{float:left;padding:8px 20px 8px 0;font-size:20px;font-weight:200;color:#777;}
+.navbar .nav{float:right;list-style:none;margin:0;padding:0;}
+.navbar .nav>li{float:left;position:relative;line-height:20px;}
+.navbar .nav>li>a{padding:10px 15px;display:block;color:#777;}
+.navbar .nav>li>a:hover{color:#333;background:#eee;text-decoration:none;}
+.pull-right{float:right;}
+.dropdown-menu{display:none;position:absolute;top:100%;left:0;z-index:1000;min-width:180px;padding:5px 0;margin:2px 0 0;list-style:none;background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.dropdown.open>.dropdown-menu{display:block;}
+.dropdown-menu>li>a{display:block;padding:3px 20px;clear:both;color:#333;white-space:nowrap;}
+.dropdown-menu>li>a:hover{background:#08c;color:#fff;text-decoration:none;}
+.caret{display:inline-block;width:0;height:0;margin-left:4px;vertical-align:middle;border-top:4px solid #333;border-right:4px solid transparent;border-left:4px solid transparent;opacity:.6;}
+caption{font-weight:700;font-size:18px;margin-bottom:20px;text-align:left;}
+.table{width:100%;margin-bottom:20px;border-collapse:collapse;}
+.table-bordered,.table.table-bordered{border:1px solid #ddd;border-radius:4px;border-collapse:separate;}
+.table th,.table td{padding:8px;line-height:20px;border-top:1px solid #ddd;vertical-align:top;}
+.table-bordered th,.table-bordered td{border-left:1px solid #ddd;}
+.table-bordered tr th:first-child,.table-bordered tr td:first-child{border-left:0;}
+.description{margin:-10px 0 20px 0;}
+.table tbody tr td{word-break:break-word;}
+.table tbody tr.success td{background-color:#dff0d8;}
+.table tbody tr.error td{background-color:#f2dede;}
+.table tbody tr.warning td{background-color:#fcf8e3;}
+.table tbody tr.info td{background-color:#d9edf7;}
+.form-inline .input-small,.form-inline .input-large,.form-inline .btn,.form-inline label{margin-right:8px;margin-bottom:4px;display:inline-block;vertical-align:middle;}
+.form-inline .checkbox input{width:auto;margin-right:4px;}
+.input-small{width:130px;padding:4px 6px;border:1px solid #ccc;border-radius:3px;box-sizing:border-box;}
+.input-large{width:220px;padding:4px 6px;border:1px solid #ccc;border-radius:3px;box-sizing:border-box;}
+.btn{display:inline-block;padding:4px 12px;font-size:14px;text-align:center;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;color:#333;}
+.btn:hover{background:#e6e6e6;text-decoration:none;}
+.checkbox{padding:4px 0;display:inline-block;}
+.help-inline{display:inline-block;margin-left:4px;color:#999;vertical-align:middle;max-width:480px;font-size:13px;line-height:1.35;}
+.alert{padding:8px 14px;margin-bottom:18px;border:1px solid transparent;border-radius:4px;}
+.alert-error{background-color:#f2dede;border-color:#eed3d7;color:#b94a48;}
+.alert-success{background-color:#dff0d8;border-color:#d6e9c6;color:#468847;}
+footer{margin-top:30px;padding-top:15px;border-top:1px solid #e5e5e5;color:#999;font-size:13px;}
+.field-glyph{margin-right:4px;opacity:.85;}
+CSS;
+		$output .= "\n" . '</style>' . "\n";
 		$output .= '</head>' . "\n";
 		$output .= '<body style="padding:10px 0;">' . "\n";
 		$output .= '<div class="container">' . "\n";
@@ -708,7 +759,7 @@ class PHP_WP_Info {
 	}
 
 	/**
-	 * Close HTML, call JS
+	 * Close HTML with inline scripts only (no external script tags).
 	 */
 	public function get_footer() {
 		$output = '';
@@ -716,16 +767,63 @@ class PHP_WP_Info {
 		$output .= '<footer>&copy; <a href="https://beapi.fr">BE API</a> ' . date( 'Y' ) . '</footer>' . "\n";
 		$output .= '</div>' . "\n";
 
-		$output .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>' . "\n";
-		$output .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>' . "\n";
-
-		$output .= '<script type="text/javascript">
-			function getIP(json) {
-			  $(".realip td:last").html(json.ip);
+		$output .= <<<'JS'
+<script>
+(function () {
+	document.querySelectorAll('.dropdown-toggle').forEach(function (toggle) {
+		toggle.addEventListener('click', function (e) {
+			e.preventDefault();
+			var li = toggle.closest('.dropdown');
+			if (!li) {
+				return;
 			}
-			</script>' . "\n";
+			var wasOpen = li.classList.contains('open');
+			document.querySelectorAll('.dropdown.open').forEach(function (d) {
+				d.classList.remove('open');
+			});
+			if (!wasOpen) {
+				li.classList.add('open');
+			}
+		});
+	});
+	document.addEventListener('click', function (e) {
+		if (!e.target.closest('.dropdown')) {
+			document.querySelectorAll('.dropdown.open').forEach(function (d) {
+				d.classList.remove('open');
+			});
+		}
+	});
+})();
+(function () {
+	var row = document.querySelector('tr.realip');
+	if (!row) {
+		return;
+	}
+	var cell = row.querySelector('td:last-child');
+	if (!cell) {
+		return;
+	}
+	fetch('https://api.ipify.org?format=json')
+		.then(function (r) {
+			if (!r.ok) {
+				throw new Error('HTTP ' + r.status);
+			}
+			return r.json();
+		})
+		.then(function (data) {
+			if (data && data.ip) {
+				cell.textContent = data.ip;
+			} else {
+				throw new Error('No ip field');
+			}
+		})
+		.catch(function () {
+			cell.textContent = 'Unavailable (network, CORS, or CSP connect-src blocking api.ipify.org)';
+		});
+})();
+</script>
 
-		$output .= '<script type="application/javascript" src="https://api.ipify.org?format=jsonp&callback=getIP"></script>' . "\n";
+JS;
 
 		$output .= '</body>' . "\n";
 		$output .= '</html>' . "\n";
@@ -1070,9 +1168,9 @@ class PHP_WP_Info {
 		}
 
 		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
-		$output .= ' <i class="icon-envelope"></i> <input type="email" class="input-large" name="mail" placeholder="recipient@sample.com" value="">' . "\n";
-		$output .= ' <i class="icon-user"></i> <input type="email" class="input-large" name="mail_from" placeholder="mailfrom@sample.com" value="">' . "\n";
-		$output .= ' <i class="icon-user"></i> <label class="checkbox"><input type="checkbox" class="input-large" name="mail_returnpath" value="1"> Force Return-Path (only if mail from is set)</label>' . "\n";
+		$output .= ' <span class="field-glyph" aria-hidden="true">&#9993;</span> <input type="email" class="input-large" name="mail" placeholder="recipient@sample.com" value="">' . "\n";
+		$output .= ' <span class="field-glyph" aria-hidden="true">&#128100;</span> <input type="email" class="input-large" name="mail_from" placeholder="mailfrom@sample.com" value="">' . "\n";
+		$output .= ' <label class="checkbox"><input type="checkbox" class="input-large" name="mail_returnpath" value="1"> Force Return-Path (only if mail from is set)</label>' . "\n";
 		$output .= ' <button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
 		$output .= ' <span class="help-inline">Send a test e-mail to check that the server is doing its job. You can leave the “mailfrom” field blank to let the server configuration “do its thing”.</span>' . "\n";
 		$output .= '</form>' . "\n";

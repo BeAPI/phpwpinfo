@@ -1,5 +1,6 @@
 .lando.yml
 .idea
+.vscode
 wordpress
 adminer.php
 error_log.txt
