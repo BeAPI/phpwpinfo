@@ -2,6 +2,7 @@
 
 ## 1.6.2
 
+- Add Apache directory listing check for effective `Options +Indexes` / mod_autoindex: HTTP GET on bundled `indexes_probe/` (no index file) and detection of typical “Index of” HTML. See [#15](https://github.com/BeAPI/phpwpinfo/issues/15).
 - Skip SQL query cache checks (`have_query_cache`, `query_cache_size`, `query_cache_type`) on MySQL 8.0+ and MariaDB 10.5.2+, where the feature no longer exists. See [#35](https://github.com/BeAPI/phpwpinfo/issues/35).
 - Fix fatal `RedisException: NOAUTH Authentication required` on `session_start()` when PHP is configured with Redis sessions but `session.save_path` does not include Redis credentials: force file-based sessions for this script only (keeps form credentials in server-side storage). See [#36](https://github.com/BeAPI/phpwpinfo/issues/36).
 - Remove third-party CDN assets (Bootstrap CSS/JS, jQuery); ship minimal inline CSS and vanilla JS for navigation dropdowns

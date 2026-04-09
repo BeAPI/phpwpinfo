@@ -1,6 +1,6 @@
 <?php
 /*
-Copyright 2012-2025 - Amaury Balmer (amaury@beapi.fr)
+Copyright 2012-2026 - Amaury Balmer (amaury@beapi.fr)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -14,9 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-TODO:
-	[ ] Delete deprecated
 */
 
 // Suppress DateTime warnings
@@ -41,6 +38,8 @@ function phpwpinfo() {
 }
 
 class PHP_WP_Info {
+
+	public const VERSION = '1.6.2';
 
 	private bool $debug_mode = true;
 	private $php_version     = '≥7.4';
@@ -812,7 +811,7 @@ class PHP_WP_Info {
 		$output .= '<head>' . "\n";
 		$output .= '<meta charset="utf-8">' . "\n";
 		$output .= '<meta name="robots" content="noindex,nofollow">' . "\n";
-		$output .= '<title>PHPWPInfo</title>' . "\n";
+		$output .= '<title>PHPWPInfo ' . self::VERSION . '</title>' . "\n";
 		$output .= '<link rel="icon" href="favicon.ico" sizes="32x32">' . "\n";
 		$output .= '<style>' . "\n";
 		$output .= <<<'CSS'
@@ -825,6 +824,7 @@ a:hover{color:#005580;text-decoration:underline;}
 .navbar-inner:before,.navbar-inner:after{display:table;content:"";line-height:0;}
 .navbar-inner:after{clear:both;}
 .navbar .brand{float:left;padding:8px 20px 8px 0;font-size:20px;font-weight:200;color:#777;}
+.navbar .brand .version-label{font-size:11px;font-weight:600;line-height:1.2;padding:2px 7px;margin-left:10px;vertical-align:middle;color:#666;background:#eee;border:1px solid #ddd;border-radius:3px;}
 .navbar .nav{float:right;list-style:none;margin:0;padding:0;}
 .navbar .nav>li{float:left;position:relative;line-height:20px;}
 .navbar .nav>li>a{padding:10px 15px;display:block;color:#777;}
@@ -867,7 +867,7 @@ CSS;
 		$output .= '<div class="container">' . "\n";
 		$output .= '<div class="navbar">' . "\n";
 		$output .= '<div class="navbar-inner">' . "\n";
-		$output .= '<a class="brand" href="#">PHP WordPress Info</a>' . "\n";
+		$output .= '<a class="brand" href="#">PHP WordPress Info <span class="version-label">' . self::VERSION . '</span></a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
 		$output .= '<li><a href="https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions" target="_blank">WordPress Handbook</a></li>' . "\n";
 		$output .= '<li><a href="https://github.com/BeAPI/phpwpinfo" target="_blank">Project on Github</a></li>' . "\n";
