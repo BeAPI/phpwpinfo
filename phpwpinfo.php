@@ -104,6 +104,7 @@ class PHP_WP_Info {
 		$this->test_php_extensions();
 		$this->test_database_config();
 		$this->test_apache_modules();
+		$this->test_apache_directory_indexes();
 		$this->test_form_mail();
 		$this->test_form_redis();
 		$this->test_form_connectivity();
@@ -418,6 +419,83 @@ class PHP_WP_Info {
 		}
 
 		$this->html_table_close();
+
+		return true;
+	}
+
+	/**
+	 * Probe whether Apache directory listing (Options +Indexes / mod_autoindex) is effective for a folder without an index file.
+	 */
+	public function test_apache_directory_indexes() {
+		if ( $this->_get_current_webserver() !== 'Apache' ) {
+			return false;
+		}
+
+		$this->html_table_open( 'Apache directory listing (Options Indexes)', '', 'Required', 'Recommended', 'Current' );
+
+		$probe_dir = __DIR__ . '/indexes_probe';
+		if ( ! is_dir( $probe_dir ) ) {
+			$this->html_table_row(
+				'indexes_probe/',
+				'-',
+				'-',
+				'Missing (ship indexes_probe/ with phpwpinfo.php)',
+				'info'
+			);
+			$this->html_table_close(
+				'This check requests indexes_probe/ (no index file). If directory listing is enabled, Apache returns an "Index of" page — a security risk on production sites.'
+			);
+
+			return false;
+		}
+
+		if ( ! function_exists( 'curl_init' ) ) {
+			$this->html_table_row( 'Directory listing (autoindex)', 'Off', 'Off', 'cURL extension required', 'info' );
+			$this->html_table_close();
+
+			return false;
+		}
+
+		$url    = $this->_get_indexes_probe_url();
+		$result = $this->_http_get_local_url( $url );
+
+		if ( $result['error'] !== null ) {
+			$this->html_table_row(
+				'Directory listing (autoindex)',
+				'Off',
+				'Off',
+				htmlspecialchars( $result['error'], ENT_QUOTES, 'UTF-8' ),
+				'info'
+			);
+			$this->html_table_close();
+
+			return false;
+		}
+
+		$body    = is_string( $result['body'] ) ? $result['body'] : '';
+		$listing = $this->_response_looks_like_apache_directory_listing( $body );
+
+		if ( $listing ) {
+			$this->html_table_row(
+				'Directory listing (autoindex)',
+				'Off',
+				'Off',
+				'Enabled (Options +Indexes or equivalent)',
+				'error'
+			);
+		} else {
+			$this->html_table_row(
+				'Directory listing (autoindex)',
+				'Off',
+				'Off',
+				'Not shown (HTTP ' . (int) $result['code'] . ')',
+				'success'
+			);
+		}
+
+		$this->html_table_close(
+			'Uses an HTTP GET to ' . htmlspecialchars( $url, ENT_QUOTES, 'UTF-8' ) . ' and detects typical mod_autoindex HTML ("Index of" in title or h1).'
+		);
 
 		return true;
 	}
@@ -1711,6 +1789,75 @@ JS;
 		}
 
 		return 'http://';
+	}
+
+	/**
+	 * Public URL of the directory used to detect Apache autoindex (no index document inside).
+	 */
+	private function _get_indexes_probe_url() {
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'];
+		$dir  = dirname( $_SERVER['SCRIPT_NAME'] );
+		$dir  = str_replace( '\\', '/', (string) $dir );
+		if ( $dir === '/' || $dir === '.' || $dir === '' ) {
+			$path = '/indexes_probe/';
+		} else {
+			$path = rtrim( $dir, '/' ) . '/indexes_probe/';
+		}
+
+		return $this->get_scheme() . $host . $path;
+	}
+
+	/**
+	 * GET a URL on the same site (follow redirects, optional Basic auth when phpwpinfo defines LOGIN).
+	 *
+	 * @return array{code:int, body:?string, error:?string}
+	 */
+	private function _http_get_local_url( $url ) {
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $url );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+		curl_setopt( $ch, CURLOPT_TIMEOUT, 15 );
+		curl_setopt( $ch, CURLOPT_USERAGENT, 'phpwpinfo-directory-index-probe/1.0' );
+		if ( defined( 'LOGIN' ) && defined( 'PASSWORD' ) ) {
+			curl_setopt( $ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
+			curl_setopt( $ch, CURLOPT_USERPWD, LOGIN . ':' . PASSWORD );
+		}
+
+		$body  = curl_exec( $ch );
+		$code  = (int) curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+		$errno = curl_errno( $ch );
+		$error = curl_error( $ch );
+		curl_close( $ch );
+
+		if ( $errno !== 0 ) {
+			return array(
+				'code'  => 0,
+				'body'  => null,
+				'error' => $error !== '' ? $error : ( 'cURL error ' . $errno ),
+			);
+		}
+
+		return array(
+			'code'  => $code,
+			'body'  => is_string( $body ) ? $body : '',
+			'error' => null,
+		);
+	}
+
+	/**
+	 * Typical Apache mod_autoindex HTML markers.
+	 */
+	private function _response_looks_like_apache_directory_listing( $body ) {
+		if ( $body === '' ) {
+			return false;
+		}
+
+		if ( preg_match( '/<title>\s*Index of\b/i', $body ) ) {
+			return true;
+		}
+
+		return (bool) preg_match( '/<h1[^>]*>\s*Index of\b/i', $body );
 	}
 
 	/**
