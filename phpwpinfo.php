@@ -42,13 +42,19 @@ class PHP_WP_Info {
 	public const VERSION = '1.6.2';
 
 	private bool $debug_mode = true;
-	private $php_version     = '≥7.4';
-	private $curl_version    = '7.38';
+
+	/** Minimum PHP version (compare with version_compare; display uses ≥ prefix in UI). */
+	private const MIN_PHP_VERSION = '7.4';
+
+	/** Minimum cURL extension version (libcurl) for reporting in PHP extensions table. */
+	private const MIN_CURL_VERSION = '7.38';
 
 	/** Minimum database server versions supported by current WordPress requirements. */
 	private const MIN_MYSQL_VERSION   = '8.0';
 	private const MIN_MARIADB_VERSION = '10.6';
-	private $redis_version            = '3.0'; // TODO: Check vs plugin ?
+
+	/** Minimum Redis server version checked against INFO (see https://endoflife.date/redis). */
+	private const MIN_REDIS_VERSION = '6.2';
 
 	private $db_infos = array();
 	private $db_link  = false;
@@ -173,11 +179,12 @@ class PHP_WP_Info {
 		}
 
 		// Test PHP Version
-		$php_version = PHP_VERSION;
-		if ( version_compare( $php_version, $this->php_version, '>=' ) ) {
-			$this->html_table_row( 'PHP Version', $this->php_version, '> 7.3', $php_version, 'success' );
+		$php_version         = PHP_VERSION;
+		$php_required_label = '≥' . self::MIN_PHP_VERSION;
+		if ( version_compare( $php_version, self::MIN_PHP_VERSION, '>=' ) ) {
+			$this->html_table_row( 'PHP Version', $php_required_label, '> 7.3', $php_version, 'success' );
 		} else {
-			$this->html_table_row( 'PHP Version', $this->php_version, '> 7.3', $php_version, 'error' );
+			$this->html_table_row( 'PHP Version', $php_required_label, '> 7.3', $php_version, 'error' );
 		}
 
 		// Test Database Client extensions/version.
@@ -423,7 +430,7 @@ class PHP_WP_Info {
 			$this->html_table_row(
 				'Curl version',
 				'-',
-				$this->curl_version,
+				self::MIN_CURL_VERSION,
 				sprintf( '%s %s', $curl['version'], $curl['ssl_version'] ),
 				'info'
 			);
@@ -1244,10 +1251,10 @@ JS;
 		if ( $this->redis_link !== false && class_exists( 'Redis' ) ) {
 			$redis_info = $this->redis_link->info();
 
-			if ( version_compare( $redis_info['redis_version'], $this->redis_version, '>=' ) ) {
+			if ( version_compare( $redis_info['redis_version'], self::MIN_REDIS_VERSION, '>=' ) ) {
 				$this->html_table_row(
 					'Database Version',
-					$this->redis_version,
+					self::MIN_REDIS_VERSION,
 					'> 5',
 					$redis_info['redis_version'],
 					'success'
@@ -1255,7 +1262,7 @@ JS;
 			} else {
 				$this->html_table_row(
 					'Database Version',
-					$this->redis_version,
+					self::MIN_REDIS_VERSION,
 					'> 5',
 					$redis_info['redis_version'],
 					'error'
@@ -1312,7 +1319,7 @@ JS;
 
 			$this->html_table_row(
 				'Redis version',
-				$this->redis_version,
+				self::MIN_REDIS_VERSION,
 				'-',
 				'Not available, needs redis auth.',
 				'warning'
