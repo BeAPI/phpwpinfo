@@ -597,6 +597,14 @@ class PHP_WP_Info {
 			$this->html_table_row( 'expose_php', '-', '0 or Off', $value, 'error' );
 		}
 
+		$value = ini_get( 'allow_url_fopen' );
+		$allow_url_fopen_on = ( strtolower( (string) $value ) === 'on' || $value === '1' );
+		if ( $allow_url_fopen_on ) {
+			$this->html_table_row( 'allow_url_fopen', '-', 'Off', $value, 'warning' );
+		} else {
+			$this->html_table_row( 'allow_url_fopen', '-', 'Off', $value, 'success' );
+		}
+
 		$value = ini_get( 'upload_tmp_dir' );
 		$this->html_table_row( 'upload_tmp_dir', $value, '', '', 'info', 3 );
 		if ( is_dir( $value ) && @is_writable( $value ) ) {
