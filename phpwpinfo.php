@@ -850,7 +850,7 @@ class PHP_WP_Info {
 				}
 			}
 		}
-		// $this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
+
 	}
 
 	public function test_form_mail() {
@@ -861,8 +861,6 @@ class PHP_WP_Info {
 
 	/**
 	 * Start HTML with inline CSS (no external stylesheets).
-	 * TODO: Add links to Codex/WP.org
-	 * TODO: Add colors legend
 	 */
 	public function get_header() {
 		$output  = '';
@@ -920,6 +918,14 @@ caption{font-weight:700;font-size:18px;margin-bottom:20px;text-align:left;}
 .alert-success{background-color:#dff0d8;border-color:#d6e9c6;color:#468847;}
 footer{margin-top:30px;padding-top:15px;border-top:1px solid #e5e5e5;color:#999;font-size:13px;}
 .field-glyph{margin-right:4px;opacity:.85;}
+.status-legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 18px;padding:10px 14px;font-size:13px;line-height:1.4;color:#555;background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;}
+.status-legend-title{font-weight:600;color:#333;margin-right:4px;}
+.legend-item{display:inline-flex;align-items:center;gap:6px;}
+.legend-swatch{display:inline-block;width:18px;height:18px;border-radius:3px;border:1px solid rgba(0,0,0,.08);flex-shrink:0;}
+.legend-swatch--success{background-color:#dff0d8;}
+.legend-swatch--error{background-color:#f2dede;}
+.legend-swatch--warning{background-color:#fcf8e3;}
+.legend-swatch--info{background-color:#d9edf7;}
 CSS;
 		$output .= "\n" . '</style>' . "\n";
 		$output .= '</head>' . "\n";
@@ -929,7 +935,7 @@ CSS;
 		$output .= '<div class="navbar-inner">' . "\n";
 		$output .= '<a class="brand" href="#">PHP WordPress Info <span class="version-label">' . self::VERSION . '</span></a>' . "\n";
 		$output .= '<ul class="nav pull-right">' . "\n";
-		$output .= '<li><a href="https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions" target="_blank">WordPress Handbook</a></li>' . "\n";
+		$output .= '<li><a href="https://make.wordpress.org/hosting/handbook/server-environment/" target="_blank">WordPress Handbook</a></li>' . "\n";
 		$output .= '<li><a href="https://github.com/BeAPI/phpwpinfo" target="_blank">Project on Github</a></li>' . "\n";
 
 		if ( $this->db_link !== false ) {
@@ -979,6 +985,14 @@ CSS;
 
 		$output .= '</ul>' . "\n";
 		$output .= '</div>' . "\n";
+		$output .= '</div>' . "\n";
+
+		$output .= '<div class="status-legend" role="note" aria-label="Meaning of row highlight colors in tables below">' . "\n";
+		$output .= '<span class="status-legend-title">Row colors:</span>' . "\n";
+		$output .= '<span class="legend-item"><span class="legend-swatch legend-swatch--success" aria-hidden="true"></span> OK / meets requirement</span>' . "\n";
+		$output .= '<span class="legend-item"><span class="legend-swatch legend-swatch--error" aria-hidden="true"></span> Issue / does not meet requirement</span>' . "\n";
+		$output .= '<span class="legend-item"><span class="legend-swatch legend-swatch--warning" aria-hidden="true"></span> Warning</span>' . "\n";
+		$output .= '<span class="legend-item"><span class="legend-swatch legend-swatch--info" aria-hidden="true"></span> Optional / informational</span>' . "\n";
 		$output .= '</div>' . "\n";
 
 		echo $output;
