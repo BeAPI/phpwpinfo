@@ -43,9 +43,12 @@ class PHP_WP_Info {
 
 	private bool $debug_mode = true;
 	private $php_version     = '≥7.4';
-	private $mysql_version   = '8.0'; // TODO: Min MariaDB version ?
 	private $curl_version    = '7.38';
-	private $redis_version   = '3.0'; // TODO: Check vs plugin ?
+
+	/** Minimum database server versions supported by current WordPress requirements. */
+	private const MIN_MYSQL_VERSION   = '8.0';
+	private const MIN_MARIADB_VERSION = '10.6';
+	private $redis_version            = '3.0'; // TODO: Check vs plugin ?
 
 	private $db_infos = array();
 	private $db_link  = false;
@@ -112,6 +115,42 @@ class PHP_WP_Info {
 	}
 
 	/**
+	 * Parses mysqli_get_server_info() output into engine flavor and comparable version.
+	 *
+	 * MariaDB often reports "5.5.5-10.11.6-MariaDB"; the real release is the second x.y.z group.
+	 *
+	 * @return array{flavor:string,version:string,raw:string} flavor is mysql or mariadb.
+	 */
+	private function parse_database_server_info( string $server_info ): array {
+		$raw = $server_info;
+		if ( stripos( $server_info, 'mariadb' ) !== false ) {
+			$version = '';
+			if ( preg_match( '/-(\d+\.\d+\.\d+(?:\.\d+)?)-MariaDB/i', $server_info, $matches ) ) {
+				$version = $matches[1];
+			} elseif ( preg_match( '/(\d+\.\d+\.\d+(?:\.\d+)?)-MariaDB/i', $server_info, $matches ) ) {
+				$version = $matches[1];
+			} elseif ( preg_match( '/(\d+\.\d+\.\d+)/', $server_info, $matches ) ) {
+				$version = $matches[1];
+			}
+
+			return array(
+				'flavor'  => 'mariadb',
+				'version' => $version,
+				'raw'     => $raw,
+			);
+		}
+
+		$version = preg_replace( '/[^0-9.].*/', '', $server_info );
+		$version = rtrim( $version, '.' );
+
+		return array(
+			'flavor'  => 'mysql',
+			'version' => $version,
+			'raw'     => $raw,
+		);
+	}
+
+	/**
 	 * Main test, check if php/databse/git are installed and right version for WP
 	 */
 	public function test_versions() {
@@ -148,20 +187,26 @@ class PHP_WP_Info {
 			$this->html_table_row( 'PHP MySQLi Extension', 'Yes', 'Yes', 'Installed', 'success' );
 			$this->html_table_row(
 				'PHP MySQLi Client Version',
-				$this->mysql_version,
-				'> 5.5',
+				'-',
+				'-',
 				mysqli_get_client_info(),
 				'info'
 			);
 		}
 
-		// Test Databse Server Version
+		// Test Database Server Version (MySQL 8.0+ or MariaDB 10.6+ per WordPress).
 		if ( $this->db_link !== false && is_callable( 'mysqli_get_server_info' ) ) {
-			$mysql_version = preg_replace( '/[^0-9.].*/', '', mysqli_get_server_info( $this->db_link ) );
-			if ( version_compare( $mysql_version, $this->mysql_version, '>=' ) ) {
-				$this->html_table_row( 'Database Version', $this->mysql_version, '> 5.5', $mysql_version, 'success' );
+			$server_info    = mysqli_get_server_info( $this->db_link );
+			$parsed         = $this->parse_database_server_info( $server_info );
+			$min_required   = $parsed['flavor'] === 'mariadb' ? self::MIN_MARIADB_VERSION : self::MIN_MYSQL_VERSION;
+			$required_label = $parsed['flavor'] === 'mariadb'
+				? 'MariaDB ' . self::MIN_MARIADB_VERSION . '+'
+				: 'MySQL ' . self::MIN_MYSQL_VERSION . '+';
+			$ok             = $parsed['version'] !== '' && version_compare( $parsed['version'], $min_required, '>=' );
+			if ( $ok ) {
+				$this->html_table_row( 'Database Version', $required_label, 'WP-supported', $server_info, 'success' );
 			} else {
-				$this->html_table_row( 'Database Version', $this->mysql_version, '> 5.5', $mysql_version, 'error' );
+				$this->html_table_row( 'Database Version', $required_label, 'WP-supported', $server_info, 'error' );
 			}
 		} else {
 			// Show Database Form
@@ -169,7 +214,7 @@ class PHP_WP_Info {
 
 			$this->html_table_row(
 				'Database Version',
-				$this->mysql_version,
+				'MySQL ' . self::MIN_MYSQL_VERSION . '+ or MariaDB ' . self::MIN_MARIADB_VERSION . '+',
 				'-',
 				'Not available, needs database credentials.',
 				'warning'
@@ -597,7 +642,7 @@ class PHP_WP_Info {
 			$this->html_table_row( 'expose_php', '-', '0 or Off', $value, 'error' );
 		}
 
-		$value = ini_get( 'allow_url_fopen' );
+		$value              = ini_get( 'allow_url_fopen' );
 		$allow_url_fopen_on = ( strtolower( (string) $value ) === 'on' || $value === '1' );
 		if ( $allow_url_fopen_on ) {
 			$this->html_table_row( 'allow_url_fopen', '-', 'Off', $value, 'warning' );
