@@ -179,7 +179,7 @@ class PHP_WP_Info {
 		}
 
 		// Test PHP Version
-		$php_version         = PHP_VERSION;
+		$php_version        = PHP_VERSION;
 		$php_required_label = '≥' . self::MIN_PHP_VERSION;
 		if ( version_compare( $php_version, self::MIN_PHP_VERSION, '>=' ) ) {
 			$this->html_table_row( 'PHP Version', $php_required_label, '> 7.3', $php_version, 'success' );
@@ -436,7 +436,7 @@ class PHP_WP_Info {
 			);
 		}
 
-		$this->html_table_close( '(*) Items with an asterisk are not required by WordPress, but it is highly recommended by me!' );
+		$this->html_table_close( '(*) Entries marked with an asterisk are outside the official WordPress requirements but are strongly recommended for production environments.' );
 	}
 
 	public function test_apache_modules() {
@@ -850,7 +850,6 @@ class PHP_WP_Info {
 				}
 			}
 		}
-
 	}
 
 	public function test_form_mail() {
