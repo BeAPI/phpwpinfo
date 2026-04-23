@@ -1890,7 +1890,7 @@ JS;
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-		curl_setopt( $ch, CURLOPT_TIMEOUT, 15 );
+		curl_setopt( $ch, CURLOPT_TIMEOUT, 5 );
 		curl_setopt( $ch, CURLOPT_USERAGENT, 'phpwpinfo-directory-index-probe/1.0' );
 		if ( defined( 'LOGIN' ) && defined( 'PASSWORD' ) ) {
 			curl_setopt( $ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
