@@ -39,12 +39,12 @@ function phpwpinfo() {
 
 class PHP_WP_Info {
 
-	public const VERSION = '1.6.2';
+	public const VERSION = '1.6.3';
 
 	private bool $debug_mode = true;
 
 	/** Minimum PHP version (compare with version_compare; display uses ≥ prefix in UI). */
-	private const MIN_PHP_VERSION = '7.4';
+	private const MIN_PHP_VERSION = '8.4';
 
 	/** Minimum cURL extension version (libcurl) for reporting in PHP extensions table. */
 	private const MIN_CURL_VERSION = '7.38';
@@ -56,11 +56,26 @@ class PHP_WP_Info {
 	/** Minimum Redis server version checked against INFO (see https://endoflife.date/redis). */
 	private const MIN_REDIS_VERSION = '6.2';
 
-	private $db_infos = array();
-	private $db_link  = false;
+	private array $db_infos = array();
+	private bool $db_link  = false;
 
-	private $redis_infos = array();
-	private $redis_link  = false;
+	private array $redis_infos = array();
+	private bool $redis_link  = false;
+
+	/** @var 'html'|'json' */
+	private string $output_format = 'html';
+
+	/**
+	 * Collected report data (sections, messages, interactive tests).
+	 * Rendered as HTML or JSON after all tests run.
+	 *
+	 * @var array{sections:list<array<string,mixed>>,messages:list<array<string,mixed>>,interactive_tests:list<array<string,mixed>>}
+	 */
+	private array $report = array(
+		'sections'          => array(),
+		'messages'          => array(),
+		'interactive_tests' => array(),
+	);
 
 	public function __construct() {
 		// Use file sessions: php.ini may use Redis without AUTH in save_path, which throws RedisException NOAUTH.
@@ -74,6 +89,10 @@ class PHP_WP_Info {
 			ini_set( 'session.save_path', $session_dir );
 		}
 		@session_start();
+
+		if ( $this->request_accepts_json() ) {
+			$this->output_format = 'json';
+		}
 
 		if ( $this->debug_mode === true ) {
 			ini_set( 'display_errors', 1 );
@@ -105,8 +124,6 @@ class PHP_WP_Info {
 	}
 
 	public function init_all_tests() {
-		$this->get_header();
-
 		$this->test_versions();
 		$this->test_php_config();
 		$this->test_php_extensions();
@@ -117,7 +134,374 @@ class PHP_WP_Info {
 		$this->test_form_redis();
 		$this->test_form_connectivity();
 
+		$this->render_output();
+	}
+
+	private function is_json_output(): bool {
+		return $this->output_format === 'json';
+	}
+
+	/**
+	 * Whether the current HTTP request asks for a JSON representation (Accept header).
+	 */
+	private function request_accepts_json(): bool {
+		if ( ! isset( $_SERVER['HTTP_ACCEPT'] ) ) {
+			return false;
+		}
+
+		$accept_header = (string) $_SERVER['HTTP_ACCEPT'];
+
+		return $accept_header !== '' && strpos( strtolower( $accept_header ), 'application/json' ) !== false;
+	}
+
+	/**
+	 * @param array<string, mixed> $test
+	 */
+	private function register_interactive_test( array $test ): void {
+		$this->report['interactive_tests'][] = $test;
+	}
+
+	/**
+	 * Placeholder row so HTML rendering knows where to output a form.
+	 */
+	private function table_row_form( string $form_id ): void {
+		$this->ensure_current_section();
+
+		$last = count( $this->report['sections'] ) - 1;
+		$this->report['sections'][ $last ]['rows'][] = array(
+			'type'    => 'form',
+			'form_id' => $form_id,
+		);
+	}
+
+	private function ensure_current_section(): void {
+		if ( empty( $this->report['sections'] ) ) {
+			$this->table_open();
+		}
+	}
+
+	/**
+	 * @param 'success'|'error'|'warning'|'info' $type
+	 */
+	private function add_message( string $type, string $text ): void {
+		$this->report['messages'][] = array(
+			'type' => $type,
+			'text' => $text,
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>|null
+	 */
+	private function find_interactive_test( string $form_id ): ?array {
+		foreach ( $this->report['interactive_tests'] as $test ) {
+			if ( isset( $test['id'] ) && $test['id'] === $form_id ) {
+				return $test;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param string $status Raw status (may include extra HTML classes).
+	 */
+	private function normalize_row_status( string $status ): string {
+		$normalized_status = strtok( $status, ' ' );
+		if ( ! in_array( $normalized_status, array( 'success', 'error', 'warning', 'info' ), true ) ) {
+			return 'info';
+		}
+
+		return $normalized_status;
+	}
+
+	private function render_output(): void {
+		if ( $this->is_json_output() ) {
+			$this->render_json();
+			exit();
+		}
+
+		$this->render_html();
+	}
+
+	private function render_json(): void {
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: application/json; charset=utf-8' );
+		}
+
+		echo json_encode( $this->build_json_payload(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+	}
+
+	private function render_html(): void {
+		$this->get_header();
+
+		foreach ( $this->report['sections'] as $section ) {
+			$this->render_html_section( $section );
+		}
+
 		$this->get_footer();
+	}
+
+	/**
+	 * @param array<string, mixed> $section
+	 */
+	private function render_html_section( array $section ): void {
+		$title = isset( $section['title'] ) ? $section['title'] : '';
+		$cols  = isset( $section['columns'] ) ? $section['columns'] : array();
+		$col1  = isset( $cols['name'] ) ? $cols['name'] : '';
+		$col2  = isset( $cols['required'] ) ? $cols['required'] : '';
+		$col3  = isset( $cols['recommended'] ) ? $cols['recommended'] : '';
+		$col4  = isset( $cols['current'] ) ? $cols['current'] : '';
+
+		$output  = '';
+		$output .= '<table class="table table-bordered">' . "\n";
+		$output .= '<caption>' . $title . '</caption>' . "\n";
+		$output .= '<thead>' . "\n";
+
+		if ( ! empty( $col1 ) || ! empty( $col2 ) || ! empty( $col3 ) || ! empty( $col4 ) ) {
+			$output .= '<tr>' . "\n";
+			$output .= '<th style="width:40%">' . $col1 . '</th>' . "\n";
+			if ( ! empty( $col4 ) ) {
+				$output .= '<th style="width:20%">' . $col2 . '</th>' . "\n";
+				$output .= '<th style="width:20%">' . $col3 . '</th>' . "\n";
+				$output .= '<th style="width:20%">' . $col4 . '</th>' . "\n";
+			} else {
+				$output .= '<th style="width:30%">' . $col2 . '</th>' . "\n";
+				$output .= '<th style="width:30%">' . $col3 . '</th>' . "\n";
+			}
+			$output .= '</tr>' . "\n";
+		}
+
+		$output .= '</thead>' . "\n";
+		$output .= '<tbody>' . "\n";
+
+		if ( ! empty( $section['rows'] ) ) {
+			foreach ( $section['rows'] as $row ) {
+				if ( isset( $row['type'] ) && $row['type'] === 'form' ) {
+					$output .= $this->render_form_html( $row['form_id'] );
+					continue;
+				}
+
+				$output .= $this->render_html_data_row( $row );
+			}
+		}
+
+		$output .= '</tbody>' . "\n";
+		$output .= '</table>' . "\n";
+
+		$description = $section['description'] ?? '';
+		if ( ! empty( $description ) ) {
+			$output .= '<p class="description">' . $description . '</p>' . "\n";
+		}
+
+		echo $output;
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 */
+	private function render_html_data_row( array $row ): string {
+		$status  = $row['status'] ?? 'success';
+		$colspan = $row['colspan'] ?? false;
+		$output  = '<tr class="' . $status . '">' . "\n";
+
+		if ( $colspan !== false ) {
+			$name  = $row['name'] ?? '';
+			$value = $row['value'] ?? '';
+			$output .= '<td>' . $name . '</td>' . "\n";
+			$output .= '<td colspan="' . (int) $colspan . '" style="text-align:center;">' . $value . '</td>' . "\n";
+		} else {
+			$output .= '<td>' . ( $row['name'] ?? '' ) . '</td>' . "\n";
+			$output .= '<td>' . ( $row['required'] ?? '' ) . '</td>' . "\n";
+			$output .= '<td>' . ( $row['recommended'] ?? '' ) . '</td>' . "\n";
+			$output .= '<td>' . ( $row['current'] ?? '' ) . '</td>' . "\n";
+		}
+
+		$output .= '</tr>' . "\n";
+
+		return $output;
+	}
+
+	private function render_form_html( string $form_id ): string {
+		switch ( $form_id ) {
+			case 'database_connection':
+				return $this->render_database_form_html();
+			case 'redis_connection':
+				return $this->render_redis_form_html();
+			case 'email_test':
+				return $this->render_email_form_html();
+			case 'connectivity_tests':
+				return $this->render_connectivity_form_html();
+		}
+
+		return '';
+	}
+
+	private function render_database_form_html(): string {
+		$test       = $this->find_interactive_test( 'database_connection' );
+		$show_error = is_array( $test ) && isset( $test['last_result'] ) && $test['last_result'] === 'failed';
+
+		$output  = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="4">' . "\n";
+
+		if ( $show_error ) {
+			$output .= '<div class="alert alert-error">Database credentials invalid.</div>' . "\n";
+		}
+
+		$output .= '<form class="form-inline" method="post" action="">' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-db[host]" placeholder="localhost" value="localhost">' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-db[user]" placeholder="user">' . "\n";
+		$output .= '<input type="password" class="input-small" name="credentials-db[password]" placeholder="password">' . "\n";
+		$output .= '<label class="checkbox">' . "\n";
+		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
+		$output .= '</label>' . "\n";
+		$output .= '<button name="database-connection" type="submit" class="btn">Login</button>' . "\n";
+		$output .= '<span class="help-inline">We must connect to the database server (MySQL or MariaDB) to check the configuration</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		return $output;
+	}
+
+	private function render_redis_form_html(): string {
+		$test       = $this->find_interactive_test( 'redis_connection' );
+		$show_error = is_array( $test ) && isset( $test['last_result'] ) && $test['last_result'] === 'failed';
+
+		$output  = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="4">' . "\n";
+
+		if ( $show_error ) {
+			$output .= '<div class="alert alert-error">Redis credentials invalid.';
+			if ( isset( $_SESSION['redis-error-message'] ) ) {
+				$output .= ' (' . $_SESSION['redis-error-message'] . ')';
+			}
+			$output .= '</div>' . "\n";
+		}
+
+		$output .= '<form id="form-redis" class="form-inline" method="post" action="#form-redis" >' . "\n";
+		$output .= '<input type="text" class="input-small" name="credentials-redis[host]" placeholder="localhost:6379" value="localhost:6379">' . "\n";
+		$output .= '<input type="password" class="input-small" name="credentials-redis[password]" placeholder="(optional)">' . "\n";
+		$output .= '<label class="checkbox">' . "\n";
+		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
+		$output .= '</label>' . "\n";
+		$output .= '<button name="redis-connection" type="submit" class="btn">Login</button>' . "\n";
+		$output .= '<span class="help-inline">We must connect to the Redis server to check the configuration</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		return $output;
+	}
+
+	private function render_email_form_html(): string {
+		$output  = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="3">' . "\n";
+
+		foreach ( $this->report['messages'] as $message ) {
+			$class = ( isset( $message['type'] ) && $message['type'] === 'success' ) ? 'alert-success' : 'alert-error';
+			$text  = $message['text'] ?? '';
+			$output .= '<div class="alert ' . $class . '">' . $text . '</div>' . "\n";
+		}
+
+		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
+		$output .= ' <span class="field-glyph" aria-hidden="true">&#9993;</span> <input type="email" class="input-large" name="mail" placeholder="recipient@sample.com" value="">' . "\n";
+		$output .= ' <span class="field-glyph" aria-hidden="true">&#128100;</span> <input type="email" class="input-large" name="mail_from" placeholder="mailfrom@sample.com" value="">' . "\n";
+		$output .= ' <label class="checkbox"><input type="checkbox" class="input-large" name="mail_returnpath" value="1"> Force Return-Path (only if mail from is set)</label>' . "\n";
+		$output .= ' <button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
+		$output .= ' <span class="help-inline">Send a test e-mail to check that the server is doing its job. You can leave the “mailfrom” field blank to let the server configuration “do its thing”.</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		return $output;
+	}
+
+	private function render_connectivity_form_html(): string {
+		$output  = '';
+		$output .= '<tr>' . "\n";
+		$output .= '<td colspan="3">' . "\n";
+		$output .= '<form id="form-connectivity" class="form-inline" method="post" action="#form-connectivity">' . "\n";
+		$output .= '<button name="test-connectivity" type="submit" class="btn">Launch tests</button>' . "\n";
+		$output .= '<span class="help-inline">Check if server can access to internet via web and SSH</span>' . "\n";
+		$output .= '</form>' . "\n";
+		$output .= '</td>' . "\n";
+		$output .= '</tr>' . "\n";
+
+		return $output;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function build_json_payload(): array {
+		$summary  = array(
+			'success' => 0,
+			'error'   => 0,
+			'warning' => 0,
+			'info'    => 0,
+		);
+		$sections = array();
+
+		foreach ( $this->report['sections'] as $section ) {
+			$json_rows = array();
+
+			foreach ( $section['rows'] as $row ) {
+				if ( isset( $row['type'] ) && $row['type'] === 'form' ) {
+					continue;
+				}
+
+				$json_row = $row;
+				if ( isset( $json_row['status'] ) ) {
+					$json_row['status'] = $this->normalize_row_status( (string) $json_row['status'] );
+					++$summary[ $json_row['status'] ];
+				}
+
+				if (
+					isset( $json_row['status'], $json_row['name'] ) && $json_row['status'] === 'warning' && str_contains( (string) $json_row['name'], 'api.ipify.org' )
+				) {
+					$json_row['client_side'] = true;
+					$json_row['note']        = 'Value is filled in the browser via fetch(); re-fetch JSON after page JS runs, or ignore this row in automated checks.';
+				}
+
+				$json_rows[] = $json_row;
+			}
+
+			$sections[] = array(
+				'title'       => $section['title'] ?? '',
+				'columns'     => $section['columns'] ?? array(),
+				'rows'        => $json_rows,
+				'description' => $section['description'] ?? '',
+			);
+		}
+
+		$interactive_tests = array();
+		foreach ( $this->report['interactive_tests'] as $test ) {
+			$test['method']  = 'POST';
+			$test['headers'] = array(
+				'Accept' => 'application/json',
+			);
+			$interactive_tests[] = $test;
+		}
+
+		$payload = array(
+			'tool'         => 'phpwpinfo',
+			'version'      => self::VERSION,
+			'format'       => 'json',
+			'generated_at' => gmdate( 'c' ),
+			'summary'      => $summary,
+			'sections'     => $sections,
+			'messages'     => $this->report['messages'],
+		);
+
+		if ( ! empty( $interactive_tests ) ) {
+			$payload['interactive_tests'] = $interactive_tests;
+		}
+
+		return $payload;
 	}
 
 	/**
@@ -854,8 +1238,84 @@ class PHP_WP_Info {
 
 	public function test_form_mail() {
 		$this->html_table_open( 'Email Configuration', '', '', '' );
-		$this->html_form_email();
+		$this->process_email_test_if_submitted();
+
+		if ( ! isset( $_POST['test-email'] ) ) {
+			$this->register_interactive_test(
+				array(
+					'id'           => 'email_test',
+					'title'        => 'Email test',
+					'description'  => 'Send a test e-mail to verify the server mail configuration.',
+					'content_type' => 'application/x-www-form-urlencoded',
+					'fields'       => array(
+						array(
+							'name'        => 'mail',
+							'type'        => 'email',
+							'required'    => true,
+							'placeholder' => 'recipient@sample.com',
+						),
+						array(
+							'name'        => 'mail_from',
+							'type'        => 'email',
+							'required'    => false,
+							'placeholder' => 'mailfrom@sample.com',
+							'note'        => 'Leave blank to use the server default.',
+						),
+						array(
+							'name'     => 'mail_returnpath',
+							'type'     => 'checkbox',
+							'value'    => '1',
+							'required' => false,
+							'note'     => 'Force Return-Path (only if mail from is set).',
+						),
+						array(
+							'name'     => 'test-email',
+							'type'     => 'submit',
+							'required' => true,
+						),
+					),
+					'enables'      => array(
+						'Success or error message in messages[]',
+					),
+				)
+			);
+		}
+
+		$this->table_row_form( 'email_test' );
 		$this->html_table_close();
+	}
+
+	private function process_email_test_if_submitted(): void {
+		if ( ! isset( $_POST['test-email'], $_POST['mail'] ) ) {
+			return;
+		}
+
+		if ( ! filter_var( $_POST['mail'], FILTER_VALIDATE_EMAIL ) ) {
+			$this->add_message( 'error', 'Email invalid.' );
+			return;
+		}
+
+		$subject            = 'Email test with PHP WP Info';
+		$message            = "Line 1\nLine 2\nLine 3\nGreat !";
+		$additional_headers = '';
+		$headers            = 'X-Mailer: PHP/' . phpversion();
+
+		if ( isset( $_POST['mail_from'] ) && filter_var( $_POST['mail_from'], FILTER_VALIDATE_EMAIL ) ) {
+			$headers .= "\r\n" . 'From: ' . $_POST['mail_from'] . "\r\n" .
+						'Reply-To: ' . $_POST['mail_from'];
+
+			if ( isset( $_POST['mail_returnpath'] ) && '1' === $_POST['mail_returnpath'] ) {
+				$headers           .= "\r\n" . 'Return-Path: ' . $_POST['mail_from'];
+				$additional_headers = '-f ' . $_POST['mail_from'];
+			}
+		}
+
+		$mresult = mail( $_POST['mail'], $subject, $message, $headers, $additional_headers );
+		if ( $mresult ) {
+			$this->add_message( 'success', 'Mail sent with success.' );
+		} else {
+			$this->add_message( 'error', 'An error occured during mail sending.' );
+		}
 	}
 
 	/**
@@ -1080,29 +1540,21 @@ JS;
 	 * @param string $col4
 	 */
 	public function html_table_open( $title = '', $col1 = '', $col2 = '', $col3 = '', $col4 = '' ) {
-		$output  = '';
-		$output .= '<table class="table table-bordered">' . "\n";
-		$output .= '<caption>' . $title . '</caption>' . "\n";
-		$output .= '<thead>' . "\n";
+		$this->table_open( $title, $col1, $col2, $col3, $col4 );
+	}
 
-		if ( ! empty( $col1 ) || ! empty( $col2 ) || ! empty( $col3 ) || ! empty( $col4 ) ) {
-			$output .= '<tr>' . "\n";
-			$output .= '<th style="width:40%">' . $col1 . '</th>' . "\n";
-			if ( ! empty( $col4 ) ) {
-				$output .= '<th style="width:20%">' . $col2 . '</th>' . "\n";
-				$output .= '<th style="width:20%">' . $col3 . '</th>' . "\n";
-				$output .= '<th style="width:20%">' . $col4 . '</th>' . "\n";
-			} else {
-				$output .= '<th style="width:30%">' . $col2 . '</th>' . "\n";
-				$output .= '<th style="width:30%">' . $col3 . '</th>' . "\n";
-			}
-			$output .= '</tr>' . "\n";
-		}
-
-		$output .= '</thead>' . "\n";
-		$output .= '<tbody>' . "\n";
-
-		echo $output;
+	public function table_open( $title = '', $col1 = '', $col2 = '', $col3 = '', $col4 = '' ) {
+		$this->report['sections'][] = array(
+			'title'       => $title,
+			'columns'     => array(
+				'name'        => $col1,
+				'required'    => $col2,
+				'recommended' => $col3,
+				'current'     => $col4,
+			),
+			'rows'        => array(),
+			'description' => '',
+		);
 	}
 
 	/**
@@ -1111,15 +1563,16 @@ JS;
 	 * @param string $description
 	 */
 	public function html_table_close( $description = '' ) {
-		$output  = '';
-		$output .= '</tbody>' . "\n";
-		$output .= '</table>' . "\n";
+		$this->table_close( $description );
+	}
 
-		if ( ! empty( $description ) ) {
-			$output .= '<p class="description">' . $description . '</p>' . "\n";
+	public function table_close( $description = '' ) {
+		if ( empty( $this->report['sections'] ) ) {
+			return;
 		}
 
-		echo $output;
+		$last = count( $this->report['sections'] ) - 1;
+		$this->report['sections'][ $last ]['description'] = $description;
 	}
 
 	/**
@@ -1134,22 +1587,28 @@ JS;
 	 * @param bool $colspan
 	 */
 	public function html_table_row( $col1, $col2, $col3, $col4, $status = 'success', $colspan = false ) {
-		$output  = '';
-		$output .= '<tr class="' . $status . '">' . "\n";
+		$this->table_row( $col1, $col2, $col3, $col4, $status, $colspan );
+	}
+
+	public function table_row( $col1, $col2, $col3, $col4, $status = 'success', $colspan = false ) {
+		$this->ensure_current_section();
+
+		$row = array(
+			'name'   => $col1,
+			'status' => $status,
+		);
 
 		if ( $colspan !== false ) {
-			$output .= '<td>' . $col1 . '</td>' . "\n";
-			$output .= '<td colspan="' . $colspan . '" style="text-align:center;">' . $col2 . '</td>' . "\n";
+			$row['colspan'] = (int) $colspan;
+			$row['value']   = $col2;
 		} else {
-			$output .= '<td>' . $col1 . '</td>' . "\n";
-			$output .= '<td>' . $col2 . '</td>' . "\n";
-			$output .= '<td>' . $col3 . '</td>' . "\n";
-			$output .= '<td>' . $col4 . '</td>' . "\n";
+			$row['required']    = $col2;
+			$row['recommended'] = $col3;
+			$row['current']     = $col4;
 		}
 
-		$output .= '</tr>' . "\n";
-
-		echo $output;
+		$last = count( $this->report['sections'] ) - 1;
+		$this->report['sections'][ $last ]['rows'][] = $row;
 	}
 
 	/**
@@ -1163,28 +1622,51 @@ JS;
 	public function html_form_database(
 		$show_error = false
 	) {
-		$output  = '';
-		$output .= '<tr>' . "\n";
-		$output .= '<td colspan="4">' . "\n";
-
-		if ( $show_error === true ) {
-			$output .= '<div class="alert alert-error">Database credentials invalid.</div>' . "\n";
-		}
-
-		$output .= '<form class="form-inline" method="post" action="">' . "\n";
-		$output .= '<input type="text" class="input-small" name="credentials-db[host]" placeholder="localhost" value="localhost">' . "\n";
-		$output .= '<input type="text" class="input-small" name="credentials-db[user]" placeholder="user">' . "\n";
-		$output .= '<input type="password" class="input-small" name="credentials-db[password]" placeholder="password">' . "\n";
-		$output .= '<label class="checkbox">' . "\n";
-		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
-		$output .= '</label>' . "\n";
-		$output .= '<button name="database-connection" type="submit" class="btn">Login</button>' . "\n";
-		$output .= '<span class="help-inline">We must connect to the database server (MySQL or MariaDB) to check the configuration</span>' . "\n";
-		$output .= '</form>' . "\n";
-		$output .= '</td>' . "\n";
-		$output .= '</tr>' . "\n";
-
-		echo $output;
+		$this->register_interactive_test(
+			array(
+				'id'           => 'database_connection',
+				'title'        => 'Database connection',
+				'description'  => 'Connect to the database server (MySQL or MariaDB) to check server version and configuration.',
+				'content_type' => 'application/x-www-form-urlencoded',
+				'fields'       => array(
+					array(
+						'name'        => 'credentials-db[host]',
+						'type'        => 'text',
+						'default'     => 'localhost',
+						'placeholder' => 'localhost',
+						'required'    => true,
+					),
+					array(
+						'name'     => 'credentials-db[user]',
+						'type'     => 'text',
+						'required' => true,
+					),
+					array(
+						'name'     => 'credentials-db[password]',
+						'type'     => 'password',
+						'required' => true,
+					),
+					array(
+						'name'     => 'remember',
+						'type'     => 'checkbox',
+						'required' => false,
+						'note'     => 'Store credentials in session for follow-up requests.',
+					),
+					array(
+						'name'     => 'database-connection',
+						'type'     => 'submit',
+						'required' => true,
+					),
+				),
+				'enables'      => array(
+					'Database Version row in General informations',
+					'Database Configuration section',
+				),
+				'last_result'  => $show_error ? 'failed' : null,
+				'last_error'   => $show_error ? 'Database credentials invalid.' : null,
+			)
+		);
+		$this->table_row_form( 'database_connection' );
 	}
 
 	public function test_form_connectivity() {
@@ -1242,17 +1724,31 @@ JS;
 			);
 		}
 
-		$output  = '';
-		$output .= '<tr>' . "\n";
-		$output .= '<td colspan="3">' . "\n";
-		$output .= '<form id="form-connectivity" class="form-inline" method="post" action="#form-connectivity">' . "\n";
-		$output .= '<button name="test-connectivity" type="submit" class="btn">Launch tests</button>' . "\n";
-		$output .= '<span class="help-inline">Check if server can access to internet via web and SSH</span>' . "\n";
-		$output .= '</form>' . "\n";
-		$output .= '</td>' . "\n";
-		$output .= '</tr>' . "\n";
-
-		echo $output;
+		if ( ! isset( $_POST['test-connectivity'] ) ) {
+			$this->register_interactive_test(
+				array(
+					'id'           => 'connectivity_tests',
+					'title'        => 'Connectivity tests',
+					'description'  => 'Check if the server can reach the internet via HTTP, HTTPS, and SSH.',
+					'content_type' => 'application/x-www-form-urlencoded',
+					'fields'       => array(
+						array(
+							'name'     => 'test-connectivity',
+							'type'     => 'submit',
+							'required' => true,
+						),
+					),
+					'enables'      => array(
+						'Test HTTP on api.wordpress.org',
+						'Test HTTPS on api.wordpress.org',
+						'Test SSH on github.com',
+						'Test SSH on bitbucket.org',
+						'Test SSH on gitlab.com',
+					),
+				)
+			);
+			$this->table_row_form( 'connectivity_tests' );
+		}
 
 		$this->html_table_close();
 	}
@@ -1351,83 +1847,51 @@ JS;
 	 *
 	 */
 	public function html_form_redis( $show_error = false ) {
-		$output  = '';
-		$output .= '<tr>' . "\n";
-		$output .= '<td colspan="4">' . "\n";
-
-		if ( $show_error === true ) {
-			$output .= '<div class="alert alert-error">Redis credentials invalid.';
-			if ( isset( $_SESSION['redis-error-message'] ) ) {
-				$output .= ' (' . $_SESSION['redis-error-message'] . ')';
-			}
-
-			$output .= '</div>' . "\n";
+		$last_error = $show_error ? 'Redis credentials invalid.' : null;
+		if ( $show_error && isset( $_SESSION['redis-error-message'] ) ) {
+			$last_error .= ' (' . $_SESSION['redis-error-message'] . ')';
 		}
 
-		$output .= '<form id="form-redis" class="form-inline" method="post" action="#form-redis" >' . "\n";
-		$output .= '<input type="text" class="input-small" name="credentials-redis[host]" placeholder="localhost:6379" value="localhost:6379">' . "\n";
-		$output .= '<input type="password" class="input-small" name="credentials-redis[password]" placeholder="(optional)">' . "\n";
-		$output .= '<label class="checkbox">' . "\n";
-		$output .= '<input type="checkbox" name="remember"> Remember' . "\n";
-		$output .= '</label>' . "\n";
-		$output .= '<button name="redis-connection" type="submit" class="btn">Login</button>' . "\n";
-		$output .= '<span class="help-inline">We must connect to the Redis server to check the configuration</span>' . "\n";
-		$output .= '</form>' . "\n";
-		$output .= '</td>' . "\n";
-		$output .= '</tr>' . "\n";
-
-		echo $output;
-	}
-
-	/**
-	 * Form for test email
-	 *
-	 * @return void                          [description]
-	 */
-	public function html_form_email() {
-		$output  = '';
-		$output .= '<tr>' . "\n";
-		$output .= '<td colspan="3">' . "\n";
-
-		if ( isset( $_POST['test-email'], $_POST['mail'] ) ) {
-			if ( ! filter_var( $_POST['mail'], FILTER_VALIDATE_EMAIL ) ) { // Invalid
-				$output .= '<div class="alert alert-error">Email invalid.</div>' . "\n";
-			} else { // Valid mail
-				$subject            = 'Email test with PHP WP Info';
-				$message            = "Line 1\nLine 2\nLine 3\nGreat !";
-				$additional_headers = '';
-				$headers            = 'X-Mailer: PHP/' . phpversion();
-
-				if ( isset( $_POST['mail_from'] ) && filter_var( $_POST['mail_from'], FILTER_VALIDATE_EMAIL ) ) {
-					$headers .= "\r\n" . 'From: ' . $_POST['mail_from'] . "\r\n" .
-								'Reply-To: ' . $_POST['mail_from'];
-
-					if ( isset( $_POST['mail_returnpath'] ) && '1' === $_POST['mail_returnpath'] ) {
-						$headers           .= "\r\n" . 'Return-Path: ' . $_POST['mail_from'];
-						$additional_headers = '-f ' . $_POST['mail_from'];
-					}
-				}
-
-				$mresult = mail( $_POST['mail'], $subject, $message, $headers, $additional_headers );
-				if ( $mresult ) {// Valid send
-					$output .= '<div class="alert alert-success">Mail sent with success.</div>' . "\n";
-				} else { // Error send
-					$output .= '<div class="alert alert-error">An error occured during mail sending.</div>' . "\n";
-				}
-			}
-		}
-
-		$output .= '<form id="form-email" class="form-inline" method="post" action="#form-email">' . "\n";
-		$output .= ' <span class="field-glyph" aria-hidden="true">&#9993;</span> <input type="email" class="input-large" name="mail" placeholder="recipient@sample.com" value="">' . "\n";
-		$output .= ' <span class="field-glyph" aria-hidden="true">&#128100;</span> <input type="email" class="input-large" name="mail_from" placeholder="mailfrom@sample.com" value="">' . "\n";
-		$output .= ' <label class="checkbox"><input type="checkbox" class="input-large" name="mail_returnpath" value="1"> Force Return-Path (only if mail from is set)</label>' . "\n";
-		$output .= ' <button name="test-email" type="submit" class="btn">Send mail</button>' . "\n";
-		$output .= ' <span class="help-inline">Send a test e-mail to check that the server is doing its job. You can leave the “mailfrom” field blank to let the server configuration “do its thing”.</span>' . "\n";
-		$output .= '</form>' . "\n";
-		$output .= '</td>' . "\n";
-		$output .= '</tr>' . "\n";
-
-		echo $output;
+		$this->register_interactive_test(
+			array(
+				'id'           => 'redis_connection',
+				'title'        => 'Redis connection',
+				'description'  => 'Connect to the Redis server to check version and run a read/write self-test.',
+				'content_type' => 'application/x-www-form-urlencoded',
+				'fields'       => array(
+					array(
+						'name'        => 'credentials-redis[host]',
+						'type'        => 'text',
+						'default'     => 'localhost:6379',
+						'placeholder' => 'localhost:6379',
+						'required'    => true,
+					),
+					array(
+						'name'        => 'credentials-redis[password]',
+						'type'        => 'password',
+						'required'    => false,
+						'placeholder' => '(optional)',
+					),
+					array(
+						'name'     => 'remember',
+						'type'     => 'checkbox',
+						'required' => false,
+						'note'     => 'Store credentials in session for follow-up requests.',
+					),
+					array(
+						'name'     => 'redis-connection',
+						'type'     => 'submit',
+						'required' => true,
+					),
+				),
+				'enables'      => array(
+					'Redis version and self-test rows in Redis Configuration',
+				),
+				'last_result'  => $show_error ? 'failed' : null,
+				'last_error'   => $last_error,
+			)
+		);
+		$this->table_row_form( 'redis_connection' );
 	}
 
 	/**
