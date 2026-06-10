@@ -56,11 +56,10 @@ class PHP_WP_Info {
 	/** Minimum Redis server version checked against INFO (see https://endoflife.date/redis). */
 	private const MIN_REDIS_VERSION = '6.2';
 
-	private array $db_infos = array();
-	private bool $db_link  = false;
-
-	private array $redis_infos = array();
-	private bool $redis_link  = false;
+	private $db_infos   = array();
+	private $db_link    = false;
+	private $redis_infos = array();
+	private $redis_link  = false;
 
 	/** @var 'html'|'json' */
 	private string $output_format = 'html';
