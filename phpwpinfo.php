@@ -56,8 +56,8 @@ class PHP_WP_Info {
 	/** Minimum Redis server version checked against INFO (see https://endoflife.date/redis). */
 	private const MIN_REDIS_VERSION = '6.2';
 
-	private $db_infos   = array();
-	private $db_link    = false;
+	private $db_infos    = array();
+	private $db_link     = false;
 	private $redis_infos = array();
 	private $redis_link  = false;
 
@@ -125,6 +125,7 @@ class PHP_WP_Info {
 	public function init_all_tests() {
 		$this->test_versions();
 		$this->test_php_config();
+		$this->test_opcache_config();
 		$this->test_php_extensions();
 		$this->test_database_config();
 		$this->test_apache_modules();
@@ -166,7 +167,7 @@ class PHP_WP_Info {
 	private function table_row_form( string $form_id ): void {
 		$this->ensure_current_section();
 
-		$last = count( $this->report['sections'] ) - 1;
+		$last                                        = count( $this->report['sections'] ) - 1;
 		$this->report['sections'][ $last ]['rows'][] = array(
 			'type'    => 'form',
 			'form_id' => $form_id,
@@ -305,8 +306,8 @@ class PHP_WP_Info {
 		$output  = '<tr class="' . $status . '">' . "\n";
 
 		if ( $colspan !== false ) {
-			$name  = $row['name'] ?? '';
-			$value = $row['value'] ?? '';
+			$name    = $row['name'] ?? '';
+			$value   = $row['value'] ?? '';
 			$output .= '<td>' . $name . '</td>' . "\n";
 			$output .= '<td colspan="' . (int) $colspan . '" style="text-align:center;">' . $value . '</td>' . "\n";
 		} else {
@@ -401,8 +402,8 @@ class PHP_WP_Info {
 		$output .= '<td colspan="3">' . "\n";
 
 		foreach ( $this->report['messages'] as $message ) {
-			$class = ( isset( $message['type'] ) && $message['type'] === 'success' ) ? 'alert-success' : 'alert-error';
-			$text  = $message['text'] ?? '';
+			$class   = ( isset( $message['type'] ) && $message['type'] === 'success' ) ? 'alert-success' : 'alert-error';
+			$text    = $message['text'] ?? '';
 			$output .= '<div class="alert ' . $class . '">' . $text . '</div>' . "\n";
 		}
 
@@ -479,8 +480,8 @@ class PHP_WP_Info {
 
 		$interactive_tests = array();
 		foreach ( $this->report['interactive_tests'] as $test ) {
-			$test['method']  = 'POST';
-			$test['headers'] = array(
+			$test['method']      = 'POST';
+			$test['headers']     = array(
 				'Accept' => 'application/json',
 			);
 			$interactive_tests[] = $test;
@@ -1078,6 +1079,127 @@ class PHP_WP_Info {
 	}
 
 	/**
+	 * OPcache tuning checks when Zend OPcache is available.
+	 */
+	public function test_opcache_config() {
+		if ( ! is_callable( 'opcache_reset' ) ) {
+			return;
+		}
+
+		$this->html_table_open( 'OPcache Configuration', '', 'Required', 'Recommended', 'Current' );
+
+		$value = ini_get( 'opcache.enable' );
+		if ( $this->_ini_flag_is_on( 'opcache.enable' ) ) {
+			$this->html_table_row( 'opcache.enable', '1', '1', $value, 'success' );
+		} else {
+			$this->html_table_row( 'opcache.enable', '1', '1', $value, 'error' );
+		}
+
+		$value = ini_get( 'opcache.enable_cli' );
+		if ( $this->_ini_flag_is_on( 'opcache.enable_cli' ) ) {
+			$this->html_table_row( 'opcache.enable_cli', '1', '1', $value, 'success' );
+		} else {
+			$this->html_table_row( 'opcache.enable_cli', '1', '1', $value, 'warning' );
+		}
+
+		$value   = (int) ini_get( 'opcache.memory_consumption' );
+		$current = $value . ' MB';
+		if ( $value < 128 ) {
+			$this->html_table_row( 'opcache.memory_consumption', '128 MB', '256 MB', $current, 'error' );
+		} else {
+			$status = ( $value >= 256 ) ? 'success' : 'warning';
+			$this->html_table_row( 'opcache.memory_consumption', '128 MB', '256 MB', $current, $status );
+		}
+
+		$value = (int) ini_get( 'opcache.max_accelerated_files' );
+		if ( $value < 15000 ) {
+			$this->html_table_row( 'opcache.max_accelerated_files', '15000', '100000', (string) $value, 'error' );
+		} else {
+			$status = ( $value >= 100000 ) ? 'success' : 'warning';
+			$this->html_table_row( 'opcache.max_accelerated_files', '15000', '100000', (string) $value, $status );
+		}
+
+		$value   = (int) ini_get( 'opcache.interned_strings_buffer' );
+		$current = $value . ' MB';
+		if ( $value <= 8 ) {
+			$this->html_table_row( 'opcache.interned_strings_buffer', '> 8 MB', '16 MB', $current, 'error' );
+		} else {
+			$status = ( $value >= 16 ) ? 'success' : 'warning';
+			$this->html_table_row( 'opcache.interned_strings_buffer', '> 8 MB', '16 MB', $current, $status );
+		}
+
+		$value = ini_get( 'opcache.enable_file_override' );
+		if ( $this->_ini_flag_is_on( 'opcache.enable_file_override' ) ) {
+			$this->html_table_row( 'opcache.enable_file_override', '-', '1', $value, 'success' );
+		} else {
+			$this->html_table_row( 'opcache.enable_file_override', '-', '1', $value, 'warning' );
+		}
+
+		$revalidate_freq = ini_get( 'opcache.revalidate_freq' );
+		if ( $this->_ini_flag_is_off( 'opcache.validate_timestamps' ) ) {
+			$current = 'Off (revalidate_freq=' . $revalidate_freq . ', ignored)';
+			$this->html_table_row(
+				'opcache.validate_timestamps / opcache.revalidate_freq',
+				'-',
+				'Off (prod) or On + revalidate_freq=2 (dev)',
+				$current,
+				'success'
+			);
+		} else {
+			$freq    = (int) $revalidate_freq;
+			$current = 'On, revalidate_freq=' . $revalidate_freq;
+			$status  = ( 2 === $freq ) ? 'success' : 'warning';
+			$this->html_table_row(
+				'opcache.validate_timestamps / opcache.revalidate_freq',
+				'-',
+				'Off (prod) or On + revalidate_freq=2 (dev)',
+				$current,
+				$status
+			);
+		}
+
+		$value = ini_get( 'opcache.save_comments' );
+		if ( $this->_ini_flag_is_off( 'opcache.save_comments' ) ) {
+			$this->html_table_row( 'opcache.save_comments', '-', '0', $value, 'success' );
+		} else {
+			$this->html_table_row( 'opcache.save_comments', '-', '0', $value, 'warning' );
+		}
+
+		if ( ini_get( 'opcache.load_comments' ) !== false ) {
+			$value = ini_get( 'opcache.load_comments' );
+			if ( $this->_ini_flag_is_off( 'opcache.load_comments' ) ) {
+				$this->html_table_row( 'opcache.load_comments', '-', '0', $value, 'success' );
+			} else {
+				$this->html_table_row( 'opcache.load_comments', '-', '0', $value, 'warning' );
+			}
+		}
+
+		$this->html_table_close(
+			'Useful checks for OPcache performance tuning: file override, cache size, CLI, timestamp validation, and comment stripping.'
+		);
+	}
+
+	/**
+	 * Whether a php.ini boolean directive is enabled (1/On).
+	 */
+	private function _ini_flag_is_on( string $directive ): bool {
+		$value = ini_get( $directive );
+
+		return $value === '1'
+			|| strtolower( (string) $value ) === 'on'
+			|| strtolower( (string) $value ) === 'true';
+	}
+
+	/**
+	 * Whether a php.ini boolean directive is disabled (0/Off/empty).
+	 */
+	private function _ini_flag_is_off( string $directive ): bool {
+		$value = ini_get( $directive );
+
+		return $value === '0' || strtolower( (string) $value ) === 'off' || $value === '' || $value === false;
+	}
+
+	/**
 	 * Convert PHP variable (G/M/K) to bytes
 	 * Source: https://php.net/manual/fr/function.ini-get.php
 	 * @return int|string
@@ -1606,7 +1728,7 @@ JS;
 			$row['current']     = $col4;
 		}
 
-		$last = count( $this->report['sections'] ) - 1;
+		$last                                        = count( $this->report['sections'] ) - 1;
 		$this->report['sections'][ $last ]['rows'][] = $row;
 	}
 
