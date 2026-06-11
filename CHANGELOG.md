@@ -1,5 +1,10 @@
 # Changelog ##
 
+## 1.6.3
+
+- Add JSON report output when the request sends `Accept: application/json` (sections, summary, and `interactive_tests` for form-based checks).
+- Add OPcache Configuration section when Zend OPcache is available: checks `opcache.enable`, `opcache.enable_cli`, `opcache.memory_consumption`, `opcache.max_accelerated_files`, `opcache.interned_strings_buffer`, `opcache.enable_file_override`, `opcache.validate_timestamps` / `opcache.revalidate_freq`, `opcache.save_comments`, and `opcache.load_comments` with required/recommended thresholds for performance tuning.
+
 ## 1.6.2
 
 - Add Apache directory listing check for effective `Options +Indexes` / mod_autoindex: HTTP GET on bundled `indexes_probe/` (no index file) and detection of typical “Index of” HTML. See [#15](https://github.com/BeAPI/phpwpinfo/issues/15).
