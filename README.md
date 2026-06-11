@@ -35,6 +35,35 @@ Then simply reach the my-site.com/phpwpinfo.php url on your site to get the resu
 * Login : wordpress
 * Password : wordpress
 
+### JSON output
+
+By default, phpwpinfo returns the HTML report. To get the same audit data as **JSON**, send the `Accept` header on the request:
+
+```
+Accept: application/json
+```
+
+The response uses `Content-Type: application/json` and includes the test sections, a summary, and optional `interactive_tests` entries for checks that require a form submission (database, Redis, connectivity, email).
+
+**Example (GET):**
+
+```bash
+curl -u wordpress:wordpress \
+  -H 'Accept: application/json' \
+  https://my-site.com/phpwpinfo.php
+```
+
+**Example (POST interactive test):** use the same URL and the same `Accept` header. Field names are listed under `interactive_tests[].fields` in the JSON response.
+
+```bash
+curl -u wordpress:wordpress \
+  -H 'Accept: application/json' \
+  -X POST https://my-site.com/phpwpinfo.php \
+  -d 'test-connectivity='
+```
+
+Without `Accept: application/json`, the HTML UI is returned as usual.
+
 # What ? 
 
 ## 1. Self deletion
